@@ -28,11 +28,7 @@ def main():
     Tile.build_neighbors_dict() # build adjacency list
     #Tile.print_neighbors() # for debug
 
-    start_time = int(round(time.time() * 1000))
     Tile.shortestPathList, Tile.levelDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
-    end_time = int(round(time.time() * 1000))
-    bfs_time = end_time-start_time
-    print("BFS time: " + str(bfs_time))
     # print("Shortest path: " + str(shortestPath))
     # print("Level:")
     # for level in levelDict.keys():
@@ -44,15 +40,6 @@ def main():
         draw_game(screen)
         handle_events()
 
-        title = "Pathfinding"
-        #functions.text_display(screen, title, display_width/2, display_height/5, 80)
-        author = "Author: LeL"
-        #functions.text_display(screen,author,115,580,15)
-        #functions.button(screen,"Play",display_width/2-50,display_height/2-75,100,50,buttonColor,buttonColorBright,"play_game")
-        #functions.button(screen,"Keys",display_width/2-50,display_height/2,100,50,buttonColor,buttonColorBright,"legend")
-        #functions.button(screen,"Info",display_width/2-50,display_height/2+75,100,50,buttonColor,buttonColorBright,"credits")
-        #functions.button(screen,"Quit",display_width/2-50,display_height/2+150,100,50,buttonColor,buttonColorBright,"quit")
-
         pygame.display.flip() # update the screen
         pygame.time.Clock().tick(Config.FPS) # limit the framerate
 
@@ -62,6 +49,10 @@ def draw_game(screen):
         tile.draw_tile(screen)
         tile.draw_shortest_path(screen)
         tile.draw_text(screen)
+
+    # buttons
+    button(screen,"Set Target/Source",0,0,200,50,"set_target_source")
+    button(screen,"Set Walkable/Block",300,0,200,50,"set_walkable")
 
 def handle_events():
     for event in pygame.event.get():
@@ -74,28 +65,49 @@ def handle_events():
             sys.exit()
 
         # click
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            m_pos = pygame.mouse.get_pos()
-            m_x = (m_pos[0] - Config.BORDER) // Config.TILE_SIZE
-            m_y = (m_pos[1] - Config.BORDER) // Config.TILE_SIZE
+        click = pygame.mouse.get_pressed()
+        if click != (0,0,0) and GameController.isSettingTargetSource:
+            if click[0]:
+                GameController.setNewTarget()
+            elif click[2]:
+                GameController.setNewSource()
 
-            try:
-                new_target_id = Tile.coordToIdDict[(m_x, m_y)]
-                Config.target = new_target_id
-                start_time = int(round(time.time() * 1000))
-                Tile.shortestPathList, Tile.levelDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
-                end_time = int(round(time.time() * 1000))
-                bfs_time = end_time-start_time
-                print("BFS time: " + str(bfs_time))
-                print("(%d, %d) is the new target" % (m_x, m_y))
-            except:
-                pass
+        elif click!= (0,0,0) and GameController.isSettingWalkable:
+            if click[0]:
+                GameController.setWalkable(0)
+            elif click[2]:
+                GameController.setWalkable(1)
+
+def button(screen, msg, x, y, w, h, action=None):
+    # ic: inactive color
+    # ac: active color
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
+
+    if x < mouse[0] < x+w and y < mouse[1] < y+h:
+        # draw highlighted button
+        pygame.draw.rect(screen, Color.button_ac, (x,y,w,h))
+        if click[0] == 1 and action == "set_target_source":
+            GameController.isSettingTargetSourceMode()
+
+        elif click[0] == 1 and action == "set_walkable":
+            GameController.isSettingWalkableMode()
+
+    else:
+        # draw normal button
+        pygame.draw.rect(screen, Color.button_ic, (x,y,w,h))
+
+    buttonText = pygame.font.Font("freesansbold.ttf", 15)
+    textSurf, textRect = text_objects(msg, buttonText)
+    textRect.center = (x+(w)/2, y+(h/2))
+    screen.blit(textSurf,textRect)
+
+def text_objects(text, font):
+	textSurface = font.render(text,True,(0,0,0))
+	return textSurface, textSurface.get_rect()
+
+
+
 
 if __name__ == '__main__':
     main()
-
-
-# colors
-# backgroundColor = (255, 255, 102)
-# buttonColor = (153, 76, 0)
-# buttonColorBright = (204, 102, 0)

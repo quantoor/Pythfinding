@@ -5,5 +5,5 @@ class Config:
     BORDER = 50 # px
     FPS = 60
     source = "1"
-    target = "25"
+    target = "72"
     blocked_tiles = ["2", "7", "9", "10", "12", "19", "22", "24"]

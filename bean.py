@@ -2,22 +2,7 @@
 import pygame
 from math import *
 from config import Config
-
-# pygame.mixer.init()
-
-
-class Image:
-	tileSourceImage = pygame.image.load("img/tile_source.png")
-	tileTargetImage = pygame.image.load("img/tile_target.png")
-	tileWalkableImage = pygame.image.load("img/tile_walkable.png")
-	tileBlockedImage = pygame.image.load("img/tile_blocked.png")
-	shortestPathImage = pygame.image.load("img/shortest_path.png")
-
-	tileSourceImage = pygame.transform.scale(tileSourceImage, (Config.TILE_SIZE, Config.TILE_SIZE))
-	tileTargetImage = pygame.transform.scale(tileTargetImage, (Config.TILE_SIZE, Config.TILE_SIZE))
-	tileWalkableImage = pygame.transform.scale(tileWalkableImage, (Config.TILE_SIZE, Config.TILE_SIZE))
-	tileBlockedImage = pygame.transform.scale(tileBlockedImage, (Config.TILE_SIZE, Config.TILE_SIZE))
-	shortestPathImage = pygame.transform.scale(shortestPathImage, (Config.TILE_SIZE, Config.TILE_SIZE))
+import algorithms
 
 
 class Tile(pygame.Rect):
@@ -130,3 +115,81 @@ class Tile(pygame.Rect):
 			if (Tile.tilesDict[id].walkable):
 				# print("Tile %s has neighbors: " % id)
 				print(Tile.neighborsDict[id])
+
+
+class GameController:
+	isSettingTargetSource = True
+	isSettingWalkable = False
+
+	@staticmethod
+	def setNewTarget():
+	    m_pos = pygame.mouse.get_pos()
+	    m_x = (m_pos[0] - Config.BORDER) // Config.TILE_SIZE
+	    m_y = (m_pos[1] - Config.BORDER) // Config.TILE_SIZE
+	    try:
+	        new_target_id = Tile.coordToIdDict[(m_x, m_y)]
+	        Config.target = new_target_id
+	        Tile.shortestPathList, Tile.levelDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
+	        print("(%d, %d) is the new target" % (m_x, m_y))
+	    except:
+	        pass
+
+	@staticmethod
+	def setNewSource():
+	    m_pos = pygame.mouse.get_pos()
+	    m_x = (m_pos[0] - Config.BORDER) // Config.TILE_SIZE
+	    m_y = (m_pos[1] - Config.BORDER) // Config.TILE_SIZE
+	    try:
+	        new_source_id = Tile.coordToIdDict[(m_x, m_y)]
+	        Config.source = new_source_id
+	        Tile.shortestPathList, Tile.levelDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
+	        print("(%d, %d) is the new source" % (m_x, m_y))
+	    except:
+	        pass
+
+	@staticmethod
+	def setWalkable(isWalkable):
+		m_pos = pygame.mouse.get_pos()
+		m_x = (m_pos[0] - Config.BORDER) // Config.TILE_SIZE
+		m_y = (m_pos[1] - Config.BORDER) // Config.TILE_SIZE
+		try:
+			tile_id = Tile.coordToIdDict[(m_x, m_y)]
+			Tile.tilesDict[tile_id].walkable = isWalkable
+
+			Tile.build_neighbors_dict() # re-build adjacency list
+			Tile.shortestPathList, Tile.levelDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
+		except:
+			pass
+
+	@staticmethod
+	def isSettingTargetSourceMode():
+		GameController.isSettingTargetSource = True
+		GameController.isSettingWalkable = False
+		print("is setting target source")
+
+	@staticmethod
+	def isSettingWalkableMode():
+		GameController.isSettingTargetSource = False
+		GameController.isSettingWalkable = True
+		print("is setting walkable")
+
+
+class Image:
+	tileSourceImage = pygame.image.load("img/tile_source.png")
+	tileTargetImage = pygame.image.load("img/tile_target.png")
+	tileWalkableImage = pygame.image.load("img/tile_walkable.png")
+	tileBlockedImage = pygame.image.load("img/tile_blocked.png")
+	shortestPathImage = pygame.image.load("img/shortest_path.png")
+
+	tileSourceImage = pygame.transform.scale(tileSourceImage, (Config.TILE_SIZE, Config.TILE_SIZE))
+	tileTargetImage = pygame.transform.scale(tileTargetImage, (Config.TILE_SIZE, Config.TILE_SIZE))
+	tileWalkableImage = pygame.transform.scale(tileWalkableImage, (Config.TILE_SIZE, Config.TILE_SIZE))
+	tileBlockedImage = pygame.transform.scale(tileBlockedImage, (Config.TILE_SIZE, Config.TILE_SIZE))
+	shortestPathImage = pygame.transform.scale(shortestPathImage, (Config.TILE_SIZE, Config.TILE_SIZE))
+
+class Color:
+	background = (255, 255, 102)
+	white = (255,255,255)
+	black = (0,0,0)
+	button_ic = (153, 76, 0)
+	button_ac = (204, 102, 0)
