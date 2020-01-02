@@ -2,7 +2,7 @@
 
 def BFS(Adj, source, target):
 
-	print("|| Breadth First Search ||")
+	# print("|| Breadth First Search ||")
 
 	level = {source:0} # level of source is 0
 	parent = {source:None} # parent of source is None
@@ -12,16 +12,16 @@ def BFS(Adj, source, target):
 
 	while frontier:
 		next = []
-		print("\n\n### Level: %d" % (i-1)) # print current frontier level
-		print("Frontier to explore is: ")
-		print(frontier)
+		# print("\n\n### Level: %d" % (i-1)) # print current frontier level
+		# print("Frontier to explore is: ")
+		# print(frontier)
 
 		for u in frontier:
-			print("\nCurrent node: " + u) # print current node
-			print(Adj[u])
+			# print("\nCurrent node: " + u) # print current node
+			# print(Adj[u])
 
 			for v in Adj[u]:
-				print("\t- Current adjacent node: " + v)
+				# print("\t- Current adjacent node: " + v)
 
 				# if not already explored
 				if v not in level:
@@ -31,20 +31,21 @@ def BFS(Adj, source, target):
 
 					# check if target found
 					if v == target:
-						print("\nTarget found, interrupt BFS.")
+						# print("\nTarget found, interrupt BFS.")
 						shortest_path = FSP(parent, source, target)
-						print("\nShortest path from " + source + " to " + target + " is:")
-						print(shortest_path)
-						print()
+						# print("\nShortest path from " + source + " to " + target + " is:")
+						# print(shortest_path)
+						# print()
 						return shortest_path, level
 
-					print("\t  Level of " + v + " is %d" % i)
-					print("\t  Parent of " + v + " is " + u)
-					print("\t  " + v + " appended to next.")
+					# print("\t  Level of " + v + " is %d" % i)
+					# print("\t  Parent of " + v + " is " + u)
+					# print("\t  " + v + " appended to next.")
 
 				# don't explore if already visited
 				else:
-					print("\t  " + v + " is already explored.")
+					# print("\t  " + v + " is already explored.")
+					pass
 
 
 		frontier = next
@@ -67,32 +68,3 @@ def FSP(parent, source, target):
 			next_parent = parent[next_parent]
 		else:
 			return list(reversed(shortest_path)) # reverse list, from source to target
-
-
-
-
-def main():
-	# Adjacency list
-	Adj = {
-		"s":("a", "x"),
-		"a":("s", "z"),
-		"x":("s", "d", "c"),
-		"z":("a"),
-		"d":("x", "f"),
-		"c":("x", "f", "v"),
-		"f":("d", "c", "v"),
-		"v":("f", "c"),
-	}
-
-	# Source
-	source = "s"
-
-	# Target
-	target = "f"
-
-	# Exectute Breadth First Search
-	BFS(Adj, source, target)
-
-
-if __name__ == '__main__':
-	main()
