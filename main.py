@@ -14,10 +14,8 @@ def main():
     screen = pygame.display.set_mode((SCREEN_W + 2*Config.BORDER, SCREEN_H + 2*Config.BORDER))
     pygame.display.set_caption("Pathfinding")
 
-    #menuImage = pygame.image.load("images/menu_t.jpg")
-    # background = pygame.Surface(screen.get_size())
-    # background = background.convert()
-    # background.fill((255,255,255))
+    Tile.set_font() # initialize fonts
+    Tile.load_map()
 
     # create tiles
     for y in range(0, SCREEN_H, Config.TILE_SIZE):
@@ -27,12 +25,7 @@ def main():
     # build neighbors dictionary
     Tile.build_neighbors_dict() # build adjacency list
     #Tile.print_neighbors() # for debug
-
     Tile.shortestPathList, Tile.levelDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
-    # print("Shortest path: " + str(shortestPath))
-    # print("Level:")
-    # for level in levelDict.keys():
-    #     print("%s: %d" % (level, levelDict[level]))
 
 
     # starting
@@ -51,8 +44,10 @@ def draw_game(screen):
         tile.draw_text(screen)
 
     # buttons
-    button(screen,"Set Target/Source",0,0,200,50,"set_target_source")
-    button(screen,"Set Walkable/Block",300,0,200,50,"set_walkable")
+    button(screen, "Set Target/Source", 50, 0, Config.button_w, Config.button_h, "set_target_source")
+    button(screen, "Set Walkable/Block", 50 + Config.button_w, 0, Config.button_w, Config.button_h, "set_walkable")
+    button(screen, "Watch Exploration", 50 + 2*Config.button_w, 0, Config.button_w, Config.button_h, "watch_exploration")
+    button(screen, "Save Map", 50 + 3*Config.button_w, 0, Config.button_w, Config.button_h, "save_map")
 
 def handle_events():
     for event in pygame.event.get():
@@ -68,14 +63,18 @@ def handle_events():
         click = pygame.mouse.get_pressed()
         if click != (0,0,0) and GameController.isSettingTargetSource:
             if click[0]:
+                print("setting target")
                 GameController.setNewTarget()
             elif click[2]:
+                print("setting source")
                 GameController.setNewSource()
 
         elif click!= (0,0,0) and GameController.isSettingWalkable:
             if click[0]:
+                print("setting walkable")
                 GameController.setWalkable(0)
             elif click[2]:
+                print("setting block")
                 GameController.setWalkable(1)
 
 def button(screen, msg, x, y, w, h, action=None):
@@ -93,20 +92,21 @@ def button(screen, msg, x, y, w, h, action=None):
         elif click[0] == 1 and action == "set_walkable":
             GameController.isSettingWalkableMode()
 
+        elif click[0] == 1 and action == "save_map":
+            GameController.saveMap()
+
     else:
         # draw normal button
         pygame.draw.rect(screen, Color.button_ic, (x,y,w,h))
 
     buttonText = pygame.font.Font("freesansbold.ttf", 15)
     textSurf, textRect = text_objects(msg, buttonText)
-    textRect.center = (x+(w)/2, y+(h/2))
+    textRect.center = (x + w/2, y + h/2)
     screen.blit(textSurf,textRect)
 
 def text_objects(text, font):
 	textSurface = font.render(text,True,(0,0,0))
 	return textSurface, textSurface.get_rect()
-
-
 
 
 if __name__ == '__main__':

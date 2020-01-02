@@ -1,8 +1,7 @@
 
-import pygame
+import pygame, json, algorithms
 from math import *
 from config import Config
-import algorithms
 
 
 class Tile(pygame.Rect):
@@ -11,8 +10,10 @@ class Tile(pygame.Rect):
 	neighborsDict = {} # id to neighbors ids
 	counter = 1 # to keep track of the total number of the tiles
 	Adj = {} # adjacency list
-	shortestPathList = []
-	levelDict = {}
+	shortestPathList = [] # list of nodes to reach target from source
+	levelDict = {} # id to level
+
+	blocked_tiles = []
 
 	def __init__(self, x, y, TILE_W, TILE_H):
 		pygame.Rect.__init__(self, x, y, TILE_W, TILE_H)
@@ -28,7 +29,7 @@ class Tile(pygame.Rect):
 		Tile.coordToIdDict[self.coord] = self.id # map this coord to this id
 
 		self.walkable = True
-		if self.id in Config.blocked_tiles:
+		if self.id in Tile.blocked_tiles:
 			self.walkable = False
 
 	def draw_tile(self, screen):
@@ -48,16 +49,14 @@ class Tile(pygame.Rect):
 			screen.blit(Image.tileTargetImage, (x, y))
 
 	def draw_text(self, screen):
-		font = pygame.font.Font('freesansbold.ttf', 12)
-		id_text = font.render(str(self.id), True, (255, 255, 255))
+		id_text = Tile.font12.render(str(self.id), True, (255, 255, 255))
 		screen.blit(id_text, (self.x+Config.TILE_SIZE//2-5+Config.BORDER, self.y+Config.TILE_SIZE//2-5+Config.BORDER))
 
 		# print level
 		if (self.walkable):
-			font = pygame.font.Font('freesansbold.ttf', 10)
 			# handle exception if tile is walkable but not reachable
 			try:
-				level_text = font.render(str(Tile.levelDict[self.id]), True, (255, 255, 255))
+				level_text = Tile.font10.render(str(Tile.levelDict[self.id]), True, (255, 255, 255))
 				screen.blit(level_text, (self.x+Config.BORDER+2, self.y+Config.BORDER+2))
 			except:
 				pass
@@ -117,6 +116,17 @@ class Tile(pygame.Rect):
 				print(Tile.neighborsDict[id])
 
 
+	@staticmethod
+	def set_font():
+		Tile.font10 = pygame.font.Font('freesansbold.ttf', 10)
+		Tile.font12 = pygame.font.Font('freesansbold.ttf', 12)
+
+	@staticmethod
+	def load_map():
+		with open('map.json', 'r') as f:
+		    Tile.blocked_tiles = json.load(f)
+		print("map saved to file")
+
 class GameController:
 	isSettingTargetSource = True
 	isSettingWalkable = False
@@ -156,6 +166,12 @@ class GameController:
 			tile_id = Tile.coordToIdDict[(m_x, m_y)]
 			Tile.tilesDict[tile_id].walkable = isWalkable
 
+			if tile_id in Tile.blocked_tiles and isWalkable: # remove tile from blocked_tiles
+				Tile.blocked_tiles.remove(tile_id)
+			elif tile_id not in Tile.blocked_tiles and not isWalkable: # add tile to blocked_tiles
+				print("added to blocked tiles")
+				Tile.blocked_tiles.append(tile_id)
+
 			Tile.build_neighbors_dict() # re-build adjacency list
 			Tile.shortestPathList, Tile.levelDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
 		except:
@@ -173,6 +189,12 @@ class GameController:
 		GameController.isSettingWalkable = True
 		print("is setting walkable")
 
+	@staticmethod
+	def saveMap():
+		blocked_tiles = Tile.blocked_tiles
+		with open('map.json', 'w') as f:
+		    json.dump(blocked_tiles, f)
+		print("map saved to file")
 
 class Image:
 	tileSourceImage = pygame.image.load("img/tile_source.png")
