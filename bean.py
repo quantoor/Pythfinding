@@ -11,9 +11,11 @@ class Tile(pygame.Rect):
 	counter = 1 # to keep track of the total number of the tiles
 	Adj = {} # adjacency list
 	shortestPathList = [] # list of nodes to reach target from source
-	levelDict = {} # id to level
+	idToLevelDict = {} # id to level
+	levelToIdDict = {} # level to ids
 
 	blocked_tiles = []
+	explored_tiles = []
 
 	def __init__(self, x, y, TILE_W, TILE_H):
 		pygame.Rect.__init__(self, x, y, TILE_W, TILE_H)
@@ -42,8 +44,8 @@ class Tile(pygame.Rect):
 		else:
 			screen.blit(Image.tileBlockedImage, (x, y))
 
-		# add dark mask if explored
-		if self.id in Tile.levelDict.keys():
+		# add dark mask if not explored
+		if self.id not in Tile.explored_tiles:
 			screen.blit(Image.tileExploredImage, (x, y))
 
 		# draw source and target
@@ -57,8 +59,8 @@ class Tile(pygame.Rect):
 		screen.blit(id_text, (self.x+Config.TILE_SIZE//2-5+Config.BORDER, self.y+Config.TILE_SIZE//2-5+Config.BORDER))
 
 		# print level
-		if (self.walkable) and self.id in Tile.levelDict.keys():
-			level_text = Font.font10.render(str(Tile.levelDict[self.id]), True, (255, 255, 255))
+		if (self.walkable) and self.id in Tile.idToLevelDict.keys():
+			level_text = Font.font10.render(str(Tile.idToLevelDict[self.id]), True, (255, 255, 255))
 			screen.blit(level_text, (self.x+Config.BORDER+2, self.y+Config.BORDER+2))
 
 	def draw_shortest_path(self, screen):
@@ -104,43 +106,41 @@ class Tile(pygame.Rect):
 					# print("\thas neighbor left " + str(neighborCoord))
 
 			Tile.neighborsDict[tile.id] = neighborsList # map tile id to neighbor id
-			# print("\tneighbors are tiles " + str(Tile.neighborsDict[tile.id]))
 
-	@staticmethod
-	def load_map():
-		with open('map.json', 'r') as f:
-		    Tile.blocked_tiles = json.load(f)
-		print("map loaded from file")
 
 class GameController:
-	isSettingTargetSource = True
-	isSettingWalkable = False
+	ticksLastFrame = 0
+	isShowingExploration = False
+	currentLevelExplored = 0
+	mapData = {} # map data to save
 
-	@staticmethod
+	@staticmethod # TODO put together with set new source
 	def setNewTarget():
-	    m_pos = pygame.mouse.get_pos()
-	    m_x = (m_pos[0] - Config.BORDER) // Config.TILE_SIZE
-	    m_y = (m_pos[1] - Config.BORDER) // Config.TILE_SIZE
-	    try:
-	        new_target_id = Tile.coordToIdDict[(m_x, m_y)]
-	        Config.target = new_target_id
-	        Tile.shortestPathList, Tile.levelDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
-	        print("(%d, %d) is the new target" % (m_x, m_y))
-	    except:
-	        pass
+		m_pos = pygame.mouse.get_pos()
+		m_x = (m_pos[0] - Config.BORDER) // Config.TILE_SIZE
+		m_y = (m_pos[1] - Config.BORDER) // Config.TILE_SIZE
+		try:
+			new_target_id = Tile.coordToIdDict[(m_x, m_y)]
+			Config.target = new_target_id
+			Tile.shortestPathList, Tile.idToLevelDict, Tile.levelToIdDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
+			Tile.explored_tiles = Tile.idToLevelDict.keys()
+			print("(%d, %d) is the new target" % (m_x, m_y))
+		except:
+			pass
 
 	@staticmethod
 	def setNewSource():
-	    m_pos = pygame.mouse.get_pos()
-	    m_x = (m_pos[0] - Config.BORDER) // Config.TILE_SIZE
-	    m_y = (m_pos[1] - Config.BORDER) // Config.TILE_SIZE
-	    try:
-	        new_source_id = Tile.coordToIdDict[(m_x, m_y)]
-	        Config.source = new_source_id
-	        Tile.shortestPathList, Tile.levelDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
-	        print("(%d, %d) is the new source" % (m_x, m_y))
-	    except:
-	        pass
+		m_pos = pygame.mouse.get_pos()
+		m_x = (m_pos[0] - Config.BORDER) // Config.TILE_SIZE
+		m_y = (m_pos[1] - Config.BORDER) // Config.TILE_SIZE
+		try:
+			new_source_id = Tile.coordToIdDict[(m_x, m_y)]
+			Config.source = new_source_id
+			Tile.shortestPathList, Tile.idToLevelDict, Tile.levelToIdDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
+			Tile.explored_tiles = Tile.idToLevelDict.keys()
+			print("(%d, %d) is the new source" % (m_x, m_y))
+		except:
+			pass
 
 	@staticmethod
 	def setWalkable(isWalkable):
@@ -158,31 +158,49 @@ class GameController:
 				Tile.blocked_tiles.append(tile_id)
 
 			Tile.build_neighbors_dict() # re-build adjacency list
-			Tile.shortestPathList, Tile.levelDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
+			Tile.shortestPathList, Tile.idToLevelDict, Tile.levelToIdDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
+			Tile.explored_tiles = Tile.idToLevelDict.keys()
 		except:
 			pass
 
 	@staticmethod
-	def isSettingTargetSourceMode():
-		GameController.isSettingTargetSource = True
-		GameController.isSettingWalkable = False
-		print("is setting target source")
+	def show_exploration():
+		t = pygame.time.get_ticks()
+		dt = (t - GameController.ticksLastFrame)
 
-	@staticmethod
-	def isSettingWalkableMode():
-		GameController.isSettingTargetSource = False
-		GameController.isSettingWalkable = True
-		print("is setting walkable")
+		if dt >= Config.showExplorationDelay:
+			GameController.currentLevelExplored += 1
+			GameController.ticksLastFrame = t
+
+			# update explored tiles
+			new_explored_tiles = Tile.levelToIdDict[GameController.currentLevelExplored]
+			for new_tile in new_explored_tiles:
+				Tile.explored_tiles.append(new_tile)
+
+			# show_exploration finish
+			if GameController.currentLevelExplored == max(Tile.levelToIdDict.keys()):
+				print("exploration finished")
+				GameController.isShowingExploration = False
 
 	@staticmethod
 	def saveMap():
-		blocked_tiles = Tile.blocked_tiles
+		GameController.mapData = {"target":Config.target, "source":Config.source, "blocked_tiles":Tile.blocked_tiles}
 		with open('map.json', 'w') as f:
-		    json.dump(blocked_tiles, f)
+		    json.dump(GameController.mapData, f)
 		print("map saved to file")
 
+	@staticmethod
+	def load_map():
+		with open('map.json', 'r') as f:
+			GameController.mapData = json.load(f)
+			Config.source = GameController.mapData["source"]
+			Config.target = GameController.mapData["target"]
+			Tile.blocked_tiles = GameController.mapData["blocked_tiles"]
+			print("map loaded from file")
+
+
 class Button():
-	buttonsList = []
+	buttonDict = {}
 
 	def __init__(self, x, y, w, h, text=None, action=None):
 		self.x = x
@@ -200,29 +218,26 @@ class Button():
 		else:
 			self.active = False
 
-		Button.buttonsList.append(self)
+		Button.buttonDict[self.action] = self # map button action to button
 
 	def check_if_click(self, cursor):
 		if self.rect.collidepoint(cursor):
+			self.set_active()
 			print(self.action)
 
-			self.set_active()
+			if self.action == "show_exploration":
+				GameController.isShowingExploration = True
 
-			if self.action == "set_target_source":
-				GameController.isSettingTargetSourceMode()
-
-			elif self.action == "set_walkable":
-				GameController.isSettingWalkableMode()
-
-			elif self.action == "watch_exploration":
-				Tile.watch_exploraion()
+				# initialize GameController show_exploration() parameters
+				Tile.explored_tiles = []
+				GameController.currentLevelExplored = 0
 
 			elif self.action == "save_map":
 				GameController.saveMap()
 
 	def set_active(self):
 		# first deactivate all buttons
-		for btn in Button.buttonsList:
+		for btn in Button.buttonDict.values():
 			btn.active = False
 
 		# then activate this button
@@ -246,6 +261,7 @@ class Button():
 		textSurface = font.render(text,True,(0,0,0))
 		return textSurface, textSurface.get_rect()
 
+
 class Font:
 	@staticmethod
 	def set_font():
@@ -268,6 +284,7 @@ class Image:
 	tileBlockedImage = pygame.transform.scale(tileBlockedImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	tileExploredImage = pygame.transform.scale(tileExploredImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	shortestPathImage = pygame.transform.scale(shortestPathImage, (Config.TILE_SIZE, Config.TILE_SIZE))
+
 
 class Color:
 	background = (255, 255, 102)

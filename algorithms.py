@@ -3,7 +3,8 @@ def BFS(Adj, source, target):
 
 	# print("|| Breadth First Search ||")
 
-	level = {source:0} # level of source is 0
+	nodeToLevelDict = {source:0} # level of source is 0
+	levelToNodeDict = {0:[source]} # level 0 has only source
 	parent = {source:None} # parent of source is None
 	i = 1
 	frontier = [source] #  starting frontier is source
@@ -11,47 +12,30 @@ def BFS(Adj, source, target):
 
 	while frontier:
 		next = []
-		# print("\n\n### Level: %d" % (i-1)) # print current frontier level
-		# print("Frontier to explore is: ")
-		# print(frontier)
 
 		for u in frontier:
-			# print("\nCurrent node: " + u) # print current node
-			# print(Adj[u])
-
 			for v in Adj[u]:
-				# print("\t- Current adjacent node: " + v)
 
 				# if not already explored
-				if v not in level:
-					level[v] = i
+				if v not in nodeToLevelDict:
+					nodeToLevelDict[v] = i
+					if i in levelToNodeDict.keys():
+						levelToNodeDict[i].append(v)
+					else:
+						levelToNodeDict[i] = [v]
 					parent[v] = u
 					next.append(v)
 
 					# check if target found
 					if v == target:
-						# print("\nTarget found, interrupt BFS.")
 						shortest_path = FSP(parent, source, target)
-						# print("\nShortest path from " + source + " to " + target + " is:")
-						# print(shortest_path)
-						# print()
-						return shortest_path, level
-
-					# print("\t  Level of " + v + " is %d" % i)
-					# print("\t  Parent of " + v + " is " + u)
-					# print("\t  " + v + " appended to next.")
-
-				# don't explore if already visited
-				else:
-					# print("\t  " + v + " is already explored.")
-					pass
-
+						return shortest_path, nodeToLevelDict, levelToNodeDict
 
 		frontier = next
 		i = i+1 # increment i
 
 	print("\n\n|| The graph is completely explored, BFS stops. Target has not been found. ||\n")
-	return None, level
+	return None, nodeToLevelDict, levelToNodeDict
 
 
 # Find Shortest Path from source to target

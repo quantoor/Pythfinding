@@ -6,7 +6,8 @@ class Config:
     FPS = 60
     source = "1"
     target = "288"
-    # blocked_tiles = []
 
     button_w = 300 # button width
     button_h = 50 # button height
+
+    showExplorationDelay = 100 # delay between level exploration
