@@ -49,7 +49,7 @@ class Tile(pygame.Rect):
 			screen.blit(Image.tileTargetImage, (x, y))
 
 	def draw_text(self, screen):
-		id_text = Tile.font12.render(str(self.id), True, (255, 255, 255))
+		id_text = Font.font12.render(str(self.id), True, (255, 255, 255))
 		screen.blit(id_text, (self.x+Config.TILE_SIZE//2-5+Config.BORDER, self.y+Config.TILE_SIZE//2-5+Config.BORDER))
 
 		# print level
@@ -106,26 +106,11 @@ class Tile(pygame.Rect):
 			Tile.neighborsDict[tile.id] = neighborsList # map tile id to neighbor id
 			# print("\tneighbors are tiles " + str(Tile.neighborsDict[tile.id]))
 
-
-	################################# DEBUG #################################
-	@staticmethod
-	def print_neighbors():
-		for id in Tile.tilesDict.keys():
-			if (Tile.tilesDict[id].walkable):
-				# print("Tile %s has neighbors: " % id)
-				print(Tile.neighborsDict[id])
-
-
-	@staticmethod
-	def set_font():
-		Tile.font10 = pygame.font.Font('freesansbold.ttf', 10)
-		Tile.font12 = pygame.font.Font('freesansbold.ttf', 12)
-
 	@staticmethod
 	def load_map():
 		with open('map.json', 'r') as f:
 		    Tile.blocked_tiles = json.load(f)
-		print("map saved to file")
+		print("map loaded from file")
 
 class GameController:
 	isSettingTargetSource = True
@@ -195,6 +180,79 @@ class GameController:
 		with open('map.json', 'w') as f:
 		    json.dump(blocked_tiles, f)
 		print("map saved to file")
+
+class Button():
+	buttonsList = []
+
+	def __init__(self, x, y, w, h, text=None, action=None):
+		self.x = x
+		self.y = y
+		self.w = w
+		self.h = h
+		self.text = text
+		self.action = action
+
+		rect = pygame.Rect((x, y), (w, h))
+		self.rect = rect
+
+		if action=="set_target_source":
+			self.active = True
+		else:
+			self.active = False
+
+		Button.buttonsList.append(self)
+
+	def check_if_click(self, cursor):
+		if self.rect.collidepoint(cursor):
+			print(self.action)
+
+			self.set_active()
+
+			if self.action == "set_target_source":
+				GameController.isSettingTargetSourceMode()
+
+			elif self.action == "set_walkable":
+				GameController.isSettingWalkableMode()
+
+			elif self.action == "watch_exploration":
+				Tile.watch_exploraion()
+
+			elif self.action == "save_map":
+				GameController.saveMap()
+
+	def set_active(self):
+		# first deactivate all buttons
+		for btn in Button.buttonsList:
+			btn.active = False
+
+		# then activate this button
+		self.active = True
+
+	def draw_button(self, screen):
+		mouse = pygame.mouse.get_pos() # to check if mouse is hovering
+		if (self.x < mouse[0] < self.x+self.w and self.y < mouse[1] < self.y+self.h) \
+			or self.active:
+			# draw highlighted button
+			screen.fill(Color.button_ac, self.rect)
+		else:
+			screen.fill(Color.button_ic, self.rect)
+
+		# draw_text
+		textSurf, textRect = self.text_objects(self.text, Font.font15)
+		textRect.center = (self.x + self.w/2, self.y + self.h/2)
+		screen.blit(textSurf,textRect)
+
+	def text_objects(self, text, font):
+		textSurface = font.render(text,True,(0,0,0))
+		return textSurface, textSurface.get_rect()
+
+class Font:
+	@staticmethod
+	def set_font():
+		Font.font10 = pygame.font.Font('freesansbold.ttf', 10)
+		Font.font12 = pygame.font.Font('freesansbold.ttf', 12)
+		Font.font15 = pygame.font.Font('freesansbold.ttf', 15)
+
 
 class Image:
 	tileSourceImage = pygame.image.load("img/tile_source.png")

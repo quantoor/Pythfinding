@@ -1,6 +1,8 @@
-buttons:
-  dijkstra algorithm
-  objects to pickup
-  dynamic programming (salesman problem)
-  instructions
-  save map
+TODO:
+
+- watch exploration
+- depth first search
+- Dijkstra algorithm
+- A* algorithm
+- objects to pickup
+- instructions / readme

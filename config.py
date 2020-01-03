@@ -8,5 +8,5 @@ class Config:
     target = "288"
     # blocked_tiles = []
 
-    button_w = 150 # button width
+    button_w = 300 # button width
     button_h = 50 # button height

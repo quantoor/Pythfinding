@@ -1,5 +1,4 @@
-# Breadth first search
-
+# Breadth First Search
 def BFS(Adj, source, target):
 
 	# print("|| Breadth First Search ||")
@@ -55,9 +54,8 @@ def BFS(Adj, source, target):
 	return None, level
 
 
+# Find Shortest Path from source to target
 def FSP(parent, source, target):
-	# Find Shortest Path from source to target
-
 	shortest_path = [target] # inverted path, starting from target back to source
 	next_parent = parent[target]
 
