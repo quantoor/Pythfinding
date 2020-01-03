@@ -8,10 +8,13 @@ import time
 def main():
     pygame.init()
 
-    SCREEN_W = Config.COLS * Config.TILE_SIZE # screen width
-    SCREEN_H = Config.ROWS * Config.TILE_SIZE # screen height
+    map_w = Config.COLS * Config.TILE_SIZE # map width
+    map_h = Config.ROWS * Config.TILE_SIZE # map height
 
-    screen = pygame.display.set_mode((SCREEN_W + 2*Config.BORDER, SCREEN_H + 2*Config.BORDER))
+    screen_w = map_w + 2*Config.PADDING # screen width
+    screen_h = map_h + 2*Config.PADDING + Config.margin_top # screen height
+
+    screen = pygame.display.set_mode((screen_w, screen_h))
     pygame.display.set_caption("Pathfinding")
 
 
@@ -21,8 +24,8 @@ def main():
     GameController.load_map() # load blocked tiles
 
     # create tiles
-    for y in range(0, SCREEN_H, Config.TILE_SIZE):
-        for x in range(0, SCREEN_W, Config.TILE_SIZE):
+    for y in range(0, map_h, Config.TILE_SIZE):
+        for x in range(0, map_w, Config.TILE_SIZE):
             Tile(x, y, Config.TILE_SIZE, Config.TILE_SIZE)
 
     # build neighbors dictionary
@@ -31,10 +34,10 @@ def main():
     Tile.explored_tiles = Tile.idToLevelDict.keys()
 
     # create buttons
-    Button(50, 0, Config.button_w, Config.button_h, "Set Target/Source", "set_target_source")
-    Button(50 + Config.button_w, 0, Config.button_w, Config.button_h, "Set Walkable/Blocked", "set_walkable")
-    Button(50 + 2*Config.button_w, 0, Config.button_w, Config.button_h, "Show Exploration", "show_exploration")
-    Button(50 + 3*Config.button_w, 0, Config.button_w, Config.button_h, "Save Map", "save_map")
+    Button(0, 0, Config.button_w, Config.button_h, "Set Target/Source", "set_target_source")
+    Button(Config.button_w, 0, Config.button_w, Config.button_h, "Set Walkable/Blocked", "set_walkable")
+    Button(2*Config.button_w, 0, Config.button_w, Config.button_h, "Show Exploration", "show_exploration")
+    Button(3*Config.button_w, 0, Config.button_w, Config.button_h, "Save Map", "save_map")
 
 
     # starting game
@@ -50,7 +53,8 @@ def main():
 
 
 def draw_game(screen):
-    #screen.blit(background, (0,0))
+    screen.blit(Image.backgroundImage, (0, Config.margin_top)) # padding background
+
     for tile in Tile.tilesDict.values():
         tile.draw_tile(screen)
         tile.draw_shortest_path(screen)
@@ -81,15 +85,15 @@ def handle_events():
             # click tile
             if Button.buttonDict["set_target_source"].active:
                 if event.button == 1: # lect click
-                    GameController.setNewTarget()
+                    GameController.set_target_source("target")
                 elif event.button == 3: # right click
-                    GameController.setNewSource()
+                    GameController.set_target_source("source")
 
             elif Button.buttonDict["set_walkable"].active:
                 if event.button == 1:
-                    GameController.setWalkable(0)
+                    GameController.set_walkable(0)
                 elif event.button == 3:
-                    GameController.setWalkable(1)
+                    GameController.set_walkable(1)
 
 
 if __name__ == '__main__':

@@ -34,7 +34,7 @@ def BFS(Adj, source, target):
 		frontier = next
 		i = i+1 # increment i
 
-	print("\n\n|| The graph is completely explored, BFS stops. Target has not been found. ||\n")
+	print("\n|| The graph is completely explored, BFS stops. Target has not been found. ||\n")
 	return None, nodeToLevelDict, levelToNodeDict
 
 

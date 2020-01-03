@@ -36,8 +36,8 @@ class Tile(pygame.Rect):
 
 	def draw_tile(self, screen):
 		# draw tiles
-		x = self.x + Config.BORDER
-		y = self.y + Config.BORDER
+		x = self.x + Config.PADDING
+		y = self.y + Config.PADDING + Config.margin_top
 
 		if self.walkable:
 			screen.blit(Image.tileWalkableImage, (x, y))
@@ -45,7 +45,7 @@ class Tile(pygame.Rect):
 			screen.blit(Image.tileBlockedImage, (x, y))
 
 		# add dark mask if not explored
-		if self.id not in Tile.explored_tiles:
+		if self.id not in Tile.explored_tiles and self.walkable:
 			screen.blit(Image.tileExploredImage, (x, y))
 
 		# draw source and target
@@ -56,19 +56,19 @@ class Tile(pygame.Rect):
 
 	def draw_text(self, screen):
 		id_text = Font.font12.render(str(self.id), True, (255, 255, 255))
-		screen.blit(id_text, (self.x+Config.TILE_SIZE//2-5+Config.BORDER, self.y+Config.TILE_SIZE//2-5+Config.BORDER))
+		screen.blit(id_text, (self.x+Config.TILE_SIZE//2-5+Config.PADDING, self.y+Config.TILE_SIZE//2-5+Config.PADDING+Config.margin_top))
 
 		# print level
 		if (self.walkable) and self.id in Tile.idToLevelDict.keys():
 			level_text = Font.font10.render(str(Tile.idToLevelDict[self.id]), True, (255, 255, 255))
-			screen.blit(level_text, (self.x+Config.BORDER+2, self.y+Config.BORDER+2))
+			screen.blit(level_text, (self.x+Config.PADDING+2, self.y+Config.PADDING+2+Config.margin_top))
 
 	def draw_shortest_path(self, screen):
 		if not Tile.shortestPathList:
 			return
 
 		if self.id in Tile.shortestPathList:
-			aux = (self.x+Config.BORDER, self.y+Config.BORDER)
+			aux = (self.x+Config.PADDING, self.y+Config.PADDING+Config.margin_top)
 			screen.blit(Image.shortestPathImage, aux)
 
 	@staticmethod
@@ -115,38 +115,33 @@ class GameController:
 	mapData = {} # map data to save
 
 	@staticmethod # TODO put together with set new source
-	def setNewTarget():
+	def set_target_source(type):
 		m_pos = pygame.mouse.get_pos()
-		m_x = (m_pos[0] - Config.BORDER) // Config.TILE_SIZE
-		m_y = (m_pos[1] - Config.BORDER) // Config.TILE_SIZE
-		try:
-			new_target_id = Tile.coordToIdDict[(m_x, m_y)]
-			Config.target = new_target_id
+		m_x = (m_pos[0] - Config.PADDING) // Config.TILE_SIZE
+		m_y = (m_pos[1] - Config.PADDING - Config.margin_top) // Config.TILE_SIZE
+
+		if (m_x, m_y) in Tile.coordToIdDict.keys():
+			tile_id_clicked = Tile.coordToIdDict[(m_x, m_y)]
+
+			if type == "target":
+				Config.target = tile_id_clicked
+			elif type == "source":
+				# avoid to put source on blocked tile
+				if Tile.tilesDict[tile_id_clicked].walkable:
+					Config.source = tile_id_clicked
+			else:
+				raise Exception("input type not valid")
+
+			# update shortest path
 			Tile.shortestPathList, Tile.idToLevelDict, Tile.levelToIdDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
 			Tile.explored_tiles = Tile.idToLevelDict.keys()
-			print("(%d, %d) is the new target" % (m_x, m_y))
-		except:
-			pass
+
 
 	@staticmethod
-	def setNewSource():
+	def set_walkable(isWalkable):
 		m_pos = pygame.mouse.get_pos()
-		m_x = (m_pos[0] - Config.BORDER) // Config.TILE_SIZE
-		m_y = (m_pos[1] - Config.BORDER) // Config.TILE_SIZE
-		try:
-			new_source_id = Tile.coordToIdDict[(m_x, m_y)]
-			Config.source = new_source_id
-			Tile.shortestPathList, Tile.idToLevelDict, Tile.levelToIdDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
-			Tile.explored_tiles = Tile.idToLevelDict.keys()
-			print("(%d, %d) is the new source" % (m_x, m_y))
-		except:
-			pass
-
-	@staticmethod
-	def setWalkable(isWalkable):
-		m_pos = pygame.mouse.get_pos()
-		m_x = (m_pos[0] - Config.BORDER) // Config.TILE_SIZE
-		m_y = (m_pos[1] - Config.BORDER) // Config.TILE_SIZE
+		m_x = (m_pos[0] - Config.PADDING) // Config.TILE_SIZE
+		m_y = (m_pos[1] - Config.PADDING) // Config.TILE_SIZE
 		try:
 			tile_id = Tile.coordToIdDict[(m_x, m_y)]
 			Tile.tilesDict[tile_id].walkable = isWalkable
@@ -154,7 +149,6 @@ class GameController:
 			if tile_id in Tile.blocked_tiles and isWalkable: # remove tile from blocked_tiles
 				Tile.blocked_tiles.remove(tile_id)
 			elif tile_id not in Tile.blocked_tiles and not isWalkable: # add tile to blocked_tiles
-				print("added to blocked tiles")
 				Tile.blocked_tiles.append(tile_id)
 
 			Tile.build_neighbors_dict() # re-build adjacency list
@@ -258,7 +252,7 @@ class Button():
 		screen.blit(textSurf,textRect)
 
 	def text_objects(self, text, font):
-		textSurface = font.render(text,True,(0,0,0))
+		textSurface = font.render(text, True, (0,0,0))
 		return textSurface, textSurface.get_rect()
 
 
@@ -277,6 +271,7 @@ class Image:
 	tileBlockedImage = pygame.image.load("img/tile_blocked.png")
 	tileExploredImage = pygame.image.load("img/tile_explored.png")
 	shortestPathImage = pygame.image.load("img/shortest_path.png")
+	backgroundImage = pygame.image.load("img/tile_blocked.png")
 
 	tileSourceImage = pygame.transform.scale(tileSourceImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	tileTargetImage = pygame.transform.scale(tileTargetImage, (Config.TILE_SIZE, Config.TILE_SIZE))
@@ -284,6 +279,7 @@ class Image:
 	tileBlockedImage = pygame.transform.scale(tileBlockedImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	tileExploredImage = pygame.transform.scale(tileExploredImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	shortestPathImage = pygame.transform.scale(shortestPathImage, (Config.TILE_SIZE, Config.TILE_SIZE))
+	backgroundImage = pygame.transform.scale(backgroundImage, (1920,1080))
 
 
 class Color:
