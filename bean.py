@@ -42,6 +42,10 @@ class Tile(pygame.Rect):
 		else:
 			screen.blit(Image.tileBlockedImage, (x, y))
 
+		# add dark mask if explored
+		if self.id in Tile.levelDict.keys():
+			screen.blit(Image.tileExploredImage, (x, y))
+
 		# draw source and target
 		if self.id == Config.source:
 			screen.blit(Image.tileSourceImage, (x, y))
@@ -53,13 +57,9 @@ class Tile(pygame.Rect):
 		screen.blit(id_text, (self.x+Config.TILE_SIZE//2-5+Config.BORDER, self.y+Config.TILE_SIZE//2-5+Config.BORDER))
 
 		# print level
-		if (self.walkable):
-			# handle exception if tile is walkable but not reachable
-			try:
-				level_text = Tile.font10.render(str(Tile.levelDict[self.id]), True, (255, 255, 255))
-				screen.blit(level_text, (self.x+Config.BORDER+2, self.y+Config.BORDER+2))
-			except:
-				pass
+		if (self.walkable) and self.id in Tile.levelDict.keys():
+			level_text = Font.font10.render(str(Tile.levelDict[self.id]), True, (255, 255, 255))
+			screen.blit(level_text, (self.x+Config.BORDER+2, self.y+Config.BORDER+2))
 
 	def draw_shortest_path(self, screen):
 		if not Tile.shortestPathList:
@@ -259,12 +259,14 @@ class Image:
 	tileTargetImage = pygame.image.load("img/tile_target.png")
 	tileWalkableImage = pygame.image.load("img/tile_walkable.png")
 	tileBlockedImage = pygame.image.load("img/tile_blocked.png")
+	tileExploredImage = pygame.image.load("img/tile_explored.png")
 	shortestPathImage = pygame.image.load("img/shortest_path.png")
 
 	tileSourceImage = pygame.transform.scale(tileSourceImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	tileTargetImage = pygame.transform.scale(tileTargetImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	tileWalkableImage = pygame.transform.scale(tileWalkableImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	tileBlockedImage = pygame.transform.scale(tileBlockedImage, (Config.TILE_SIZE, Config.TILE_SIZE))
+	tileExploredImage = pygame.transform.scale(tileExploredImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	shortestPathImage = pygame.transform.scale(shortestPathImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 
 class Color:

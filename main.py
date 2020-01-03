@@ -6,7 +6,6 @@ import time
 
 def main():
     pygame.init()
-    pygame.font.init()
 
     SCREEN_W = Config.COLS * Config.TILE_SIZE # screen width
     SCREEN_H = Config.ROWS * Config.TILE_SIZE # screen height
@@ -42,8 +41,7 @@ def main():
         handle_events()
 
         pygame.display.flip() # update the screen
-        pygame.time.Clock().tick(Config.FPS) # limit the framerate
-
+        pygame.time.Clock().tick(Config.FPS)
 
 def draw_game(screen):
     #screen.blit(background, (0,0))
