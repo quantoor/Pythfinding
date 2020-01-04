@@ -30,8 +30,9 @@ def main():
 
     # build neighbors dictionary
     Tile.build_neighbors_dict() # build adjacency list
-    Tile.shortestPathList, Tile.idToLevelDict, Tile.levelToIdDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
-    Tile.explored_tiles = Tile.idToLevelDict.keys()
+
+    # search shortest path with BFS
+    GameController.execute_current_algorithm()
 
     # create buttons
     Button(0, 0, Config.button_w, Config.button_h, "Set Target/Source", "set_target_source")

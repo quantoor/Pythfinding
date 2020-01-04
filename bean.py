@@ -1,4 +1,3 @@
-
 import pygame, json, algorithms
 from math import *
 from config import Config
@@ -9,13 +8,13 @@ class Tile(pygame.Rect):
 	coordToIdDict = {} # coord to id
 	neighborsDict = {} # id to neighbors ids
 	counter = 1 # to keep track of the total number of the tiles
-	Adj = {} # adjacency list
-	shortestPathList = [] # list of nodes to reach target from source
+	Adj = {} # adjacency list that represents the map
+	pathToTargetList = [] # list of nodes to reach target from source
 	idToLevelDict = {} # id to level
-	levelToIdDict = {} # level to ids
+	levelToIdDict = {} # level to ids. Used to update the frontier when showing exploration
 
-	blocked_tiles = []
-	explored_tiles = []
+	blockedTiles = [] # list of blocked tiles
+	explored_tiles = [] # list of explored tiles. Used to remove dark mark from explored tiles
 
 	def __init__(self, x, y, TILE_W, TILE_H):
 		pygame.Rect.__init__(self, x, y, TILE_W, TILE_H)
@@ -31,7 +30,7 @@ class Tile(pygame.Rect):
 		Tile.coordToIdDict[self.coord] = self.id # map this coord to this id
 
 		self.walkable = True
-		if self.id in Tile.blocked_tiles:
+		if self.id in Tile.blockedTiles:
 			self.walkable = False
 
 	def draw_tile(self, screen):
@@ -64,10 +63,10 @@ class Tile(pygame.Rect):
 			screen.blit(level_text, (self.x+Config.PADDING+2, self.y+Config.PADDING+2+Config.margin_top))
 
 	def draw_shortest_path(self, screen):
-		if not Tile.shortestPathList:
+		if not Tile.pathToTargetList:
 			return
 
-		if self.id in Tile.shortestPathList:
+		if self.id in Tile.pathToTargetList:
 			aux = (self.x+Config.PADDING, self.y+Config.PADDING+Config.margin_top)
 			screen.blit(Image.shortestPathImage, aux)
 
@@ -114,11 +113,23 @@ class GameController:
 	currentLevelExplored = 0
 	mapData = {} # map data to save
 
+	@staticmethod
+	def execute_current_algorithm():
+		Adj, source, parent = Tile.neighborsDict, Config.source, Config.target
+
+		if Config.currentAlgorithm == "BFS":
+			bfs = algorithms.BFS(Adj, source, parent)
+			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdDict = bfs.BFS_main()
+			Tile.explored_tiles = Tile.idToLevelDict.keys() # to draw explored tiles
+
+		elif Config.currentAlgorithm == "DFS":
+			dfs = algorithms.DFS(Adj, source, parent)
+			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdDict = dfs.DFS_main()
+			Tile.explored_tiles = Tile.idToLevelDict.keys() # to draw explored tiles
+
 	@staticmethod # TODO put together with set new source
 	def set_target_source(type):
-		m_pos = pygame.mouse.get_pos()
-		m_x = (m_pos[0] - Config.PADDING) // Config.TILE_SIZE
-		m_y = (m_pos[1] - Config.PADDING - Config.margin_top) // Config.TILE_SIZE
+		(m_x, m_y) = GameController._get_clicked_tile()
 
 		if (m_x, m_y) in Tile.coordToIdDict.keys():
 			tile_id_clicked = Tile.coordToIdDict[(m_x, m_y)]
@@ -133,27 +144,23 @@ class GameController:
 				raise Exception("input type not valid")
 
 			# update shortest path
-			Tile.shortestPathList, Tile.idToLevelDict, Tile.levelToIdDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
-			Tile.explored_tiles = Tile.idToLevelDict.keys()
-
+			GameController.execute_current_algorithm()
 
 	@staticmethod
 	def set_walkable(isWalkable):
-		m_pos = pygame.mouse.get_pos()
-		m_x = (m_pos[0] - Config.PADDING) // Config.TILE_SIZE
-		m_y = (m_pos[1] - Config.PADDING) // Config.TILE_SIZE
+		(m_x, m_y) = GameController._get_clicked_tile()
+
 		try:
 			tile_id = Tile.coordToIdDict[(m_x, m_y)]
 			Tile.tilesDict[tile_id].walkable = isWalkable
 
-			if tile_id in Tile.blocked_tiles and isWalkable: # remove tile from blocked_tiles
-				Tile.blocked_tiles.remove(tile_id)
-			elif tile_id not in Tile.blocked_tiles and not isWalkable: # add tile to blocked_tiles
-				Tile.blocked_tiles.append(tile_id)
+			if tile_id in Tile.blockedTiles and isWalkable: # remove tile from blockedTiles
+				Tile.blockedTiles.remove(tile_id)
+			elif tile_id not in Tile.blockedTiles and not isWalkable: # add tile to blockedTiles
+				Tile.blockedTiles.append(tile_id)
 
 			Tile.build_neighbors_dict() # re-build adjacency list
-			Tile.shortestPathList, Tile.idToLevelDict, Tile.levelToIdDict = algorithms.BFS(Tile.neighborsDict, Config.source, Config.target)
-			Tile.explored_tiles = Tile.idToLevelDict.keys()
+			GameController.execute_current_algorithm()
 		except:
 			pass
 
@@ -168,8 +175,12 @@ class GameController:
 
 			# update explored tiles
 			new_explored_tiles = Tile.levelToIdDict[GameController.currentLevelExplored]
-			for new_tile in new_explored_tiles:
-				Tile.explored_tiles.append(new_tile)
+
+			if isinstance(new_explored_tiles, list): # if there is a frontier
+				for new_tile in new_explored_tiles:
+					Tile.explored_tiles.append(new_tile)
+			else:
+				Tile.explored_tiles.append(new_explored_tiles)
 
 			# show_exploration finish
 			if GameController.currentLevelExplored == max(Tile.levelToIdDict.keys()):
@@ -178,7 +189,7 @@ class GameController:
 
 	@staticmethod
 	def saveMap():
-		GameController.mapData = {"target":Config.target, "source":Config.source, "blocked_tiles":Tile.blocked_tiles}
+		GameController.mapData = {"target":Config.target, "source":Config.source, "blocked_tiles":Tile.blockedTiles}
 		with open('map.json', 'w') as f:
 		    json.dump(GameController.mapData, f)
 		print("map saved to file")
@@ -189,8 +200,16 @@ class GameController:
 			GameController.mapData = json.load(f)
 			Config.source = GameController.mapData["source"]
 			Config.target = GameController.mapData["target"]
-			Tile.blocked_tiles = GameController.mapData["blocked_tiles"]
+			Tile.blockedTiles = GameController.mapData["blocked_tiles"]
 			print("map loaded from file")
+
+	### Private methods ###
+	@staticmethod
+	def _get_clicked_tile():
+		m_pos = pygame.mouse.get_pos()
+		m_x = (m_pos[0] - Config.PADDING) // Config.TILE_SIZE
+		m_y = (m_pos[1] - Config.PADDING - Config.margin_top) // Config.TILE_SIZE
+		return (m_x, m_y)
 
 
 class Button():

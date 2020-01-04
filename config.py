@@ -12,3 +12,5 @@ class Config:
     button_h = 40 # button height
 
     showExplorationDelay = 100 # delay between level exploration
+
+    currentAlgorithm = "DFS" # [BFS, DFS]
