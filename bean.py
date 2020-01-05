@@ -1,5 +1,4 @@
-import pygame, json, algorithms, random
-from math import *
+import pygame, json, algorithms, random, math
 from config import Config
 
 
@@ -10,12 +9,14 @@ class Tile(pygame.Rect):
 	counter = 1 # to keep track of the total number of the tiles
 	Adj = {} # adjacency list that represents the map
 	pathToTargetList = [] # list of nodes to reach target from source
+
 	idToLevelDict = {} # id to level
 	levelToIdDict = {} # level to ids. Used to update the frontier when showing exploration
+	idToCostDict = {} # for Dijkstra
+	idToCostAux = {} # to display tile cost during exploration
 
 	blockedTiles = [] # list of blocked tiles
 	explored_tiles = [] # list of explored tiles. Used to remove dark mark from explored tiles
-
 
 	def __init__(self, x, y, TILE_W, TILE_H):
 		pygame.Rect.__init__(self, x, y, TILE_W, TILE_H)
@@ -41,6 +42,7 @@ class Tile(pygame.Rect):
 		x = self.x + Config.PADDING
 		y = self.y + Config.PADDING + Config.margin_top
 
+		# draw walkable / blocked
 		if self.walkable:
 			screen.blit(Image.tileWalkableImage, (x, y))
 		else:
@@ -60,18 +62,20 @@ class Tile(pygame.Rect):
 		x = self.x + Config.PADDING
 		y = self.y + Config.PADDING + Config.margin_top
 
-		# print tile id
-		# id_text = Font.fontId.render(str(self.id), True, (255, 255, 255)) # up-left corner of the tile
-		# screen.blit(id_text, (x+2, y+2))
+		if self.walkable:
+			# print level
+			if Config.currentAlgorithm=="BFS" or Config.currentAlgorithm=="DFS":
+				dictToDisplay = Tile.idToLevelDict
 
-		# print tile cost
-		cost_text = Font.fontId.render(str(self.W), True, Color.white)
-		screen.blit(cost_text, (x+2, y+2))
+			elif Config.currentAlgorithm=="Dijkstra":
+				dictToDisplay = Tile.idToCostAux
+				# print tile W
+				cost_text = Font.fontId.render(str(self.W), True, Color.white)
+				screen.blit(cost_text, (x+2, y+2))
 
-		# print level
-		if (self.walkable) and self.id in Tile.idToLevelDict.keys():
-			level_text = Font.fontLevel.render(str(Tile.idToLevelDict[self.id]), True, (255, 255, 255))
-			screen.blit(level_text, (x + Config.TILE_SIZE//2 - 6, y + Config.TILE_SIZE//2 - 5)) # center of the tile
+			if self.id in dictToDisplay.keys():
+				level_text = Font.fontLevel.render(str(dictToDisplay[self.id]), True, (255, 255, 255))
+				screen.blit(level_text, (x + Config.TILE_SIZE//2 - 6, y + Config.TILE_SIZE//2 - 5)) # center of the tile
 
 	def draw_shortest_path(self, screen):
 		if not Tile.pathToTargetList:
@@ -130,12 +134,12 @@ class GameController:
 
 		if Config.currentAlgorithm == "BFS":
 			bfs = algorithms.BFS(Adj, source, parent)
-			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdDict = bfs.BFS_main()
+			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdDict = bfs.search()
 			Tile.explored_tiles = Tile.idToLevelDict.keys() # to draw explored tiles
 
 		elif Config.currentAlgorithm == "DFS":
 			dfs = algorithms.DFS(Adj, source, parent)
-			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdDict = dfs.DFS_main()
+			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdDict = dfs.search()
 			Tile.explored_tiles = Tile.idToLevelDict.keys() # to draw explored tiles
 
 		elif Config.currentAlgorithm == "Dijkstra":
@@ -144,10 +148,10 @@ class GameController:
 				W[tile.id] = tile.W
 			dijkstra = algorithms.Dijkstra(Adj, W, source, parent)
 
-			###### TODO explored tiles are not idToLevelDict, Dijkstra needs another dictionary to keep track of visited noted
-
-			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdDict = dijkstra.Dijkstra_main()
-			Tile.explored_tiles = Tile.idToLevelDict.keys() # to draw explored tiles
+			Tile.levelToIdDict = {}
+			Tile.pathToTargetList, Tile.idToCostDict, Tile.levelToIdDict, visited_tiles = dijkstra.search()
+			Tile.idToCostAux = Tile.idToCostDict
+			Tile.explored_tiles = visited_tiles # to draw explored tiles
 
 	@staticmethod
 	def set_target_source(click):
@@ -223,12 +227,16 @@ class GameController:
 
 			# update explored tiles
 			new_explored_tiles = Tile.levelToIdDict[GameController.currentLevelExplored]
-
 			if isinstance(new_explored_tiles, list): # if there is a frontier, new tiles are a list
 				for new_tile in new_explored_tiles:
 					Tile.explored_tiles.append(new_tile)
 			else:
 				Tile.explored_tiles.append(new_explored_tiles)
+
+			# if Dijkstra, update tile cost #########THIS IS NOT ACTUALLY UPDATING, BUT SHOWING THE COST FOR THE OPTIMAL PATH
+			if Config.currentAlgorithm=="Dijkstra":
+				currentTile = Tile.levelToIdDict[GameController.currentLevelExplored]
+				Tile.idToCostAux[currentTile] = Tile.idToCostDict[currentTile]
 
 			# show_exploration finish
 			if GameController.currentLevelExplored == max(Tile.levelToIdDict.keys()):
@@ -297,6 +305,11 @@ class Button():
 				# initialize GameController show_exploration() parameters
 				Tile.explored_tiles = []
 				GameController.currentLevelExplored = 0
+
+				if Config.currentAlgorithm =="Dijkstra":
+					Tile.idToCostAux = {}
+					for id in Tile.tilesDict.keys():
+						Tile.idToCostAux[id] = math.inf
 
 			elif self.action == "save_map":
 				# don't set active

@@ -10,7 +10,7 @@ class BFS:
 		self.nodeToLevelDict = {source:0} # level of source is 0
 		self.levelToNodeDict = {0:[source]} # level 0 has only source
 
-	def BFS_main(self):
+	def search(self):
 		# print("|| Breadth First Search ||")
 		i = 1
 		frontier = [self.source] #  starting frontier is source
@@ -24,6 +24,7 @@ class BFS:
 					# if not already explored
 					if v not in self.nodeToLevelDict:
 						self.nodeToLevelDict[v] = i
+						
 						if i in self.levelToNodeDict.keys():
 							self.levelToNodeDict[i].append(v)
 						else:
@@ -63,32 +64,22 @@ class DFS:
 		self.source = source
 		self.target = target
 		self.parent = {source:None}
-		self.target_found = False
+		self.targetFound = False
 		self.exploredTiles = [self.source]
 		self.nodeToLevelDict = {source:0} # level of source is 0
 		self.levelToNodeDict = {0:[source]} # level 0 has only source
 		self.currentLevel = 1
 
 	# Search with DFS
-	def DFS_main(self):
-		# print("|| DFS starts exploring ... ||")
-		# print("\tStarting at " + self.source)
+	def search(self):
 		self.DFS_visit(self.source)
-		# print("\n|| The graph is completely explored, DFS stops. ||\n")
-
-		# if self.target_found:
-		# 	print("Path from " + self.source + " to " + self.target + " is:")
-		# 	print(self.FPT())
-		# else:
-		# 	print("No target found.")
-
-		return self.parent, self.nodeToLevelDict, self.levelToNodeDict
+		return self.FPT(), self.nodeToLevelDict, self.levelToNodeDict
 
 	# Recursive part of DFS
 	def DFS_visit(self, s):
 		for v in self.Adj[s]:
 			if v not in self.parent:
-				if self.target_found:
+				if self.targetFound:
 					return
 				# print("\tExploring %s " % v)
 				self.exploredTiles.append(v) # append to explored tiles
@@ -99,13 +90,16 @@ class DFS:
 				# check if target found
 				if v == self.target:
 					# print("\t\tTarget found! Interrupt search")
-					self.target_found = True
+					self.targetFound = True
 
 				self.parent[v] = s
 				self.DFS_visit(v)
 
 	# Find Path to target
 	def FPT(self):
+		if not self.targetFound:
+			return None
+
 		path = [self.target] # inverted path, starting from target back to source
 		next_parent = self.parent[self.target]
 
@@ -128,53 +122,51 @@ class Dijkstra:
 		self.targetFound = False
 		N = len(Adj.keys()) # number of nodes
 
+		self.visited = [] # list of visited tiles
+
 		# initialize dictionaries
-		self.visited = {}
+		self.levelToIdDict = {} # keep track of order of explored tiles
 		self.dist = {}
 		self.parent = {}
 		for node in Adj.keys():
-			self.visited[node] = False
+			# self.visited[node] = False
 			self.dist[node] = math.inf
 			self.parent[node] = None
 
 		self.dist[source] = 0
 		self.pq = [] # priority queue
 
-	def Dijkstra_main(self):
+	def search(self):
+		level = 0
 		self.pq_push((self.source, 0))
 
 		while len(self.pq) > 0:
 			index, minValue = self.pq_poll()
-			# print("\npopped node from priority queue: ", end="")
-			# print(pq)
-			self.visited[index] = True
+			self.visited.append(index)
+			level += 1
+			self.levelToIdDict[level] = index
+
+			if index == self.target: # if the target is visited, interrupt search because min dist has been found
+				self.targetFound = True
+				break
 
 			if minValue > self.dist[index]: # skip outdated values
 				continue
 
 			for edge in self.Adj[index]:
-				if edge == None:
-					continue
-				# print("currently ad node %d, looking at edge %d" % (index, edge))
-				if self.visited[edge]:
+				if edge in self.visited: # skip if already visited
 					continue
 
 				newDist = self.dist[index] + self.W[index]
 				if newDist < self.dist[edge]:
 					self.dist[edge] = newDist
-					# print("relax edge (%d, %d) with cost %d" % (index,edge,newDist))
 					self.pq_push((edge, newDist))
-					# print("added new node to priority queue: ", end="")
-					# print(pq)
 					self.parent[edge] = index
 
-					if edge == self.target:
-						self.targetFound = True
+		# print("\n|| The graph is completely explored, Dijkstra stops. ||\n")
 
-		print("\n|| The graph is completely explored, Dijkstra stops. ||\n")
-
-		# pathToTargetList, idToLevelDict, None
-		return self.FSP(), self.dist, None
+		# pathToTargetList, idToLevelDict, exploredTiles
+		return self.FSP(), self.dist, self.levelToIdDict, self.visited
 
 	# for inserting an element in the queue
 	def pq_push(self, data):

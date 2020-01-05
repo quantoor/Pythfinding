@@ -1,8 +1,7 @@
 # Author: LeL
-import pygame, sys, algorithms
+import pygame, sys, algorithms, time
 from bean import *
 from config import Config
-import time
 
 
 def main():
