@@ -6,9 +6,13 @@ class BFS:
 		self.Adj = Adj
 		self.source = source
 		self.target = target
+		self.targetFound = False
 		self.parent = {source:None} # parent of source is None
 		self.nodeToLevelDict = {source:0} # level of source is 0
-		self.levelToNodeDict = {0:[source]} # level 0 has only source
+
+		# each element of the list represents a level and has a list with all nodes belonging to that level (frontier)
+		# e.g. level 0 has list of elements [source]
+		self.frontierList = [[source]]
 
 	def search(self):
 		# print("|| Breadth First Search ||")
@@ -24,24 +28,20 @@ class BFS:
 					# if not already explored
 					if v not in self.nodeToLevelDict:
 						self.nodeToLevelDict[v] = i
-						
-						if i in self.levelToNodeDict.keys():
-							self.levelToNodeDict[i].append(v)
-						else:
-							self.levelToNodeDict[i] = [v]
 						self.parent[v] = u
 						next.append(v)
 
 						# check if target found
 						if v == self.target:
-							shortest_path = self.FSP()
-							return shortest_path, self.nodeToLevelDict, self.levelToNodeDict
+							self.targetFound = True
+							self.frontierList.append(next)
+							return self.FSP(), self.nodeToLevelDict, self.frontierList
 
 			frontier = next
+			self.frontierList.append(frontier)
 			i = i+1 # increment i
 
-		print("\n|| The graph is completely explored, BFS stops. No target found. ||\n")
-		return None, self.nodeToLevelDict, self.levelToNodeDict
+		return None, self.nodeToLevelDict, self.frontierList
 
 	# Find Shortest Path from source to target
 	def FSP(self):
@@ -67,29 +67,29 @@ class DFS:
 		self.targetFound = False
 		self.exploredTiles = [self.source]
 		self.nodeToLevelDict = {source:0} # level of source is 0
-		self.levelToNodeDict = {0:[source]} # level 0 has only source
+		self.frontierList = [[source]] # frontier list (for DFS frontier has only 1 node but it is still a list)
 		self.currentLevel = 1
 
 	# Search with DFS
 	def search(self):
 		self.DFS_visit(self.source)
-		return self.FPT(), self.nodeToLevelDict, self.levelToNodeDict
+		return self.FPT(), self.nodeToLevelDict, self.frontierList
 
 	# Recursive part of DFS
 	def DFS_visit(self, s):
 		for v in self.Adj[s]:
 			if v not in self.parent:
+
 				if self.targetFound:
 					return
-				# print("\tExploring %s " % v)
+
 				self.exploredTiles.append(v) # append to explored tiles
 				self.nodeToLevelDict[v] = self.currentLevel
-				self.levelToNodeDict[self.currentLevel] = v
+				self.frontierList.append([v])
 				self.currentLevel += 1
 
 				# check if target found
 				if v == self.target:
-					# print("\t\tTarget found! Interrupt search")
 					self.targetFound = True
 
 				self.parent[v] = s
@@ -122,10 +122,11 @@ class Dijkstra:
 		self.targetFound = False
 		N = len(Adj.keys()) # number of nodes
 
+		self.levelToIdList = [0] # to show exploration
+		self.levelToCostList = [0] # to draw cost when showing exploration
 		self.visited = [] # list of visited tiles
 
 		# initialize dictionaries
-		self.levelToIdDict = {} # keep track of order of explored tiles
 		self.dist = {}
 		self.parent = {}
 		for node in Adj.keys():
@@ -144,7 +145,6 @@ class Dijkstra:
 			index, minValue = self.pq_poll()
 			self.visited.append(index)
 			level += 1
-			self.levelToIdDict[level] = index
 
 			if index == self.target: # if the target is visited, interrupt search because min dist has been found
 				self.targetFound = True
@@ -159,6 +159,9 @@ class Dijkstra:
 
 				newDist = self.dist[index] + self.W[index]
 				if newDist < self.dist[edge]:
+					self.levelToIdList.append([edge]) # to show relaxation
+					self.levelToCostList.append(newDist) # to show relaxation
+
 					self.dist[edge] = newDist
 					self.pq_push((edge, newDist))
 					self.parent[edge] = index
@@ -166,7 +169,7 @@ class Dijkstra:
 		# print("\n|| The graph is completely explored, Dijkstra stops. ||\n")
 
 		# pathToTargetList, idToLevelDict, exploredTiles
-		return self.FSP(), self.dist, self.levelToIdDict, self.visited
+		return self.FSP(), self.dist, self.levelToIdList, self.visited, self.levelToCostList
 
 	# for inserting an element in the queue
 	def pq_push(self, data):
@@ -206,37 +209,3 @@ class Dijkstra:
 				next_parent = self.parent[next_parent]
 			else:
 				return list(reversed(shortest_path)) # reverse list, from source to target
-
-
-def main():
-	# Adjacency list
-	Adj = {
-		"a" : ("b","c"),
-		"b" : ("d",),
-		"c" : ("b","d"),
-		"d" : ("e",),
-		"e" : (None,)
-	}
-
-	# Weight dict
-	W = {
-		("a","b") : 4,
-		("a","c") : 1,
-		("c","b") : 2,
-		("b","d") : 1,
-		("c","d") : 5,
-		("d","e") : 3
-	}
-
-	# Source
-	source = "a"
-
-	# Target
-	target = "b"
-
-	# Exectute Dijkstra
-	dijkstra = Dijkstra(Adj, W, source, target)
-	dist, parent, shortest_path = dijkstra.Dijkstra_main()
-	print(dist)
-	print(parent)
-	print(shortest_path)

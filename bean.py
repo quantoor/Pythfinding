@@ -8,21 +8,24 @@ class Tile(pygame.Rect):
 	neighborsDict = {} # id to neighbors ids
 	counter = 1 # to keep track of the total number of the tiles
 	Adj = {} # adjacency list that represents the map
+
 	pathToTargetList = [] # list of nodes to reach target from source
+	idToCoordDict = {} # to draw frontier when showing exploration
+	levelToIdList = [] # used to update the frontier when showing exploration
+	currentFrontier = [] # used to draw the frontier when showing exploration
 
 	idToLevelDict = {} # id to level
-	levelToIdDict = {} # level to ids. Used to update the frontier when showing exploration
 	idToCostDict = {} # for Dijkstra
+	levelToCostList = []
 	idToCostAux = {} # to display tile cost during exploration
 
 	blockedTiles = [] # list of blocked tiles
-	explored_tiles = [] # list of explored tiles. Used to remove dark mark from explored tiles
+	explored_tiles = [] # list of explored tiles. Used to remove dark mask from explored tiles
 
 	def __init__(self, x, y, TILE_W, TILE_H):
 		pygame.Rect.__init__(self, x, y, TILE_W, TILE_H)
 		self.id = str(Tile.counter)
 		Tile.counter += 1 # increase total tile counter
-		# print("Created tile %s at pos (%d, %d)" % (self.id, x, y))
 
 		self.coord = (x//Config.TILE_SIZE, y//Config.TILE_SIZE)
 		self.width = TILE_W
@@ -30,12 +33,13 @@ class Tile(pygame.Rect):
 
 		Tile.tilesDict[self.id] = self # map this id to this tile
 		Tile.coordToIdDict[self.coord] = self.id # map this coord to this id
+		Tile.idToCoordDict[self.id] = (self.x, self.y)
 
 		self.walkable = True
 		if self.id in Tile.blockedTiles:
 			self.walkable = False
 
-		self.W = 1
+		self.W = random.randint(1,10) # default cost for Dijkstra
 
 	def draw_tile(self, screen):
 		# draw tiles
@@ -57,6 +61,14 @@ class Tile(pygame.Rect):
 			screen.blit(Image.tileSourceImage, (x, y))
 		elif self.id == Config.target:
 			screen.blit(Image.tileTargetImage, (x, y))
+
+		# if showing exploration, draw current frontier
+		if GameController.isShowingExploration:
+			for frontierTileId in Tile.currentFrontier:
+				frontierPos = Tile.idToCoordDict[frontierTileId]
+				x = frontierPos[0]+Config.PADDING
+				y = frontierPos[1]+Config.PADDING+Config.margin_top
+				screen.blit(Image.frontierImage, (x, y))
 
 	def draw_text(self, screen):
 		x = self.x + Config.PADDING
@@ -134,12 +146,12 @@ class GameController:
 
 		if Config.currentAlgorithm == "BFS":
 			bfs = algorithms.BFS(Adj, source, parent)
-			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdDict = bfs.search()
+			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdList = bfs.search()
 			Tile.explored_tiles = Tile.idToLevelDict.keys() # to draw explored tiles
 
 		elif Config.currentAlgorithm == "DFS":
 			dfs = algorithms.DFS(Adj, source, parent)
-			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdDict = dfs.search()
+			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdList = dfs.search()
 			Tile.explored_tiles = Tile.idToLevelDict.keys() # to draw explored tiles
 
 		elif Config.currentAlgorithm == "Dijkstra":
@@ -147,11 +159,8 @@ class GameController:
 			for tile in Tile.tilesDict.values():
 				W[tile.id] = tile.W
 			dijkstra = algorithms.Dijkstra(Adj, W, source, parent)
-
-			Tile.levelToIdDict = {}
-			Tile.pathToTargetList, Tile.idToCostDict, Tile.levelToIdDict, visited_tiles = dijkstra.search()
+			Tile.pathToTargetList, Tile.idToCostDict, Tile.levelToIdList, Tile.explored_tiles, Tile.levelToCostList = dijkstra.search()
 			Tile.idToCostAux = Tile.idToCostDict
-			Tile.explored_tiles = visited_tiles # to draw explored tiles
 
 	@staticmethod
 	def set_target_source(click):
@@ -226,20 +235,20 @@ class GameController:
 			GameController.ticksLastFrame = t
 
 			# update explored tiles
-			new_explored_tiles = Tile.levelToIdDict[GameController.currentLevelExplored]
-			if isinstance(new_explored_tiles, list): # if there is a frontier, new tiles are a list
-				for new_tile in new_explored_tiles:
-					Tile.explored_tiles.append(new_tile)
-			else:
-				Tile.explored_tiles.append(new_explored_tiles)
+			Tile.currentFrontier = Tile.levelToIdList[GameController.currentLevelExplored]
+
+			# add current frontier to explored tiles
+			for new_tile in Tile.currentFrontier:
+				Tile.explored_tiles.append(new_tile)
 
 			# if Dijkstra, update tile cost #########THIS IS NOT ACTUALLY UPDATING, BUT SHOWING THE COST FOR THE OPTIMAL PATH
 			if Config.currentAlgorithm=="Dijkstra":
-				currentTile = Tile.levelToIdDict[GameController.currentLevelExplored]
-				Tile.idToCostAux[currentTile] = Tile.idToCostDict[currentTile]
+				currentTile = Tile.levelToIdList[GameController.currentLevelExplored]
+				currentTile = currentTile[0]
+				Tile.idToCostAux[currentTile] = Tile.levelToCostList[GameController.currentLevelExplored]
 
 			# show_exploration finish
-			if GameController.currentLevelExplored == max(Tile.levelToIdDict.keys()):
+			if GameController.currentLevelExplored == len(Tile.levelToIdList)-1:
 				print("exploration finished")
 				GameController.isShowingExploration = False
 
@@ -360,6 +369,7 @@ class Image:
 	tileBlockedImage = pygame.image.load("img/tile_blocked.png")
 	tileExploredImage = pygame.image.load("img/tile_explored.png")
 	shortestPathImage = pygame.image.load("img/shortest_path.png")
+	frontierImage = pygame.image.load("img/frontier.png")
 	backgroundImage = pygame.image.load("img/tile_blocked.png")
 
 	tileSourceImage = pygame.transform.scale(tileSourceImage, (Config.TILE_SIZE, Config.TILE_SIZE))
@@ -367,6 +377,7 @@ class Image:
 	tileWalkableImage = pygame.transform.scale(tileWalkableImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	tileBlockedImage = pygame.transform.scale(tileBlockedImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	tileExploredImage = pygame.transform.scale(tileExploredImage, (Config.TILE_SIZE, Config.TILE_SIZE))
+	frontierImage = pygame.transform.scale(frontierImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	shortestPathImage = pygame.transform.scale(shortestPathImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	backgroundImage = pygame.transform.scale(backgroundImage, (1920,1080))
 

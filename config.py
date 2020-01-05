@@ -11,6 +11,6 @@ class Config:
     button_w = 180 # button width
     button_h = 40 # button height
 
-    showExplorationDelay = 50 # delay between level exploration
+    showExplorationDelay = 100 # delay between level exploration
 
-    currentAlgorithm = "DFS" # [BFS, DFS, Dijkstra]
+    currentAlgorithm = "Dijkstra" # [BFS, DFS, Dijkstra]
