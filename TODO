@@ -1,11 +1,11 @@
 TODO:
 
-# depth first search
-- Dijkstra algorithm
-- A* algorithm
+# A* algorithm
 - object to pickup
 - instructions / readme
 
 - default target: None
 - if setting target on target, target = None (and algorithm just explore)
 - when showing exploration, draw path after exploration is finished
+- ctrl + click to set walkable/blocked
+- save map with tiles weights

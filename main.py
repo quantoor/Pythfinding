@@ -67,34 +67,32 @@ def draw_game(screen):
 
 def handle_events():
     for event in pygame.event.get():
-        # quit game
-        if event.type == pygame.QUIT:
+        ### quit game
+        if (event.type == pygame.QUIT) or (event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE):
             pygame.quit()
             sys.exit()
 
-        elif event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE:
-            pygame.quit()
-            sys.exit()
-
-        # click buttons
+        ### clicks
         elif event.type == pygame.MOUSEBUTTONDOWN:
+            ### click buttons
             if event.button == 1:  # buttons are clickable only with left click
-                # check buttons
                 for btn in Button.buttonDict.values():
                     btn.check_if_click(event.pos)
 
-            # click tile
+            ### click tile
+            # if Dijkstra, shift + click to change tile cost
+            if Config.currentAlgorithm == "Dijkstra":
+                if pygame.key.get_mods() & pygame.KMOD_SHIFT:
+                    GameController.edit_tile_cost(event.button)
+                    return # avoid setting target / walkable
+
             if Button.buttonDict["set_target_source"].active:
-                if event.button == 1: # lect click
-                    GameController.set_target_source("target")
-                elif event.button == 3: # right click
-                    GameController.set_target_source("source")
+                GameController.set_target_source(event.button)
+                return
 
             elif Button.buttonDict["set_walkable"].active:
-                if event.button == 1:
-                    GameController.set_walkable(0)
-                elif event.button == 3:
-                    GameController.set_walkable(1)
+                GameController.set_walkable(event.button)
+                return
 
 
 if __name__ == '__main__':

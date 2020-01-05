@@ -1,4 +1,4 @@
-import pygame, json, algorithms
+import pygame, json, algorithms, random
 from math import *
 from config import Config
 
@@ -16,6 +16,7 @@ class Tile(pygame.Rect):
 	blockedTiles = [] # list of blocked tiles
 	explored_tiles = [] # list of explored tiles. Used to remove dark mark from explored tiles
 
+
 	def __init__(self, x, y, TILE_W, TILE_H):
 		pygame.Rect.__init__(self, x, y, TILE_W, TILE_H)
 		self.id = str(Tile.counter)
@@ -32,6 +33,8 @@ class Tile(pygame.Rect):
 		self.walkable = True
 		if self.id in Tile.blockedTiles:
 			self.walkable = False
+
+		self.W = 1
 
 	def draw_tile(self, screen):
 		# draw tiles
@@ -54,13 +57,21 @@ class Tile(pygame.Rect):
 			screen.blit(Image.tileTargetImage, (x, y))
 
 	def draw_text(self, screen):
-		id_text = Font.font12.render(str(self.id), True, (255, 255, 255))
-		screen.blit(id_text, (self.x+Config.TILE_SIZE//2-5+Config.PADDING, self.y+Config.TILE_SIZE//2-5+Config.PADDING+Config.margin_top))
+		x = self.x + Config.PADDING
+		y = self.y + Config.PADDING + Config.margin_top
+
+		# print tile id
+		# id_text = Font.fontId.render(str(self.id), True, (255, 255, 255)) # up-left corner of the tile
+		# screen.blit(id_text, (x+2, y+2))
+
+		# print tile cost
+		cost_text = Font.fontId.render(str(self.W), True, Color.white)
+		screen.blit(cost_text, (x+2, y+2))
 
 		# print level
 		if (self.walkable) and self.id in Tile.idToLevelDict.keys():
-			level_text = Font.font10.render(str(Tile.idToLevelDict[self.id]), True, (255, 255, 255))
-			screen.blit(level_text, (self.x+Config.PADDING+2, self.y+Config.PADDING+2+Config.margin_top))
+			level_text = Font.fontLevel.render(str(Tile.idToLevelDict[self.id]), True, (255, 255, 255))
+			screen.blit(level_text, (x + Config.TILE_SIZE//2 - 6, y + Config.TILE_SIZE//2 - 5)) # center of the tile
 
 	def draw_shortest_path(self, screen):
 		if not Tile.pathToTargetList:
@@ -127,30 +138,49 @@ class GameController:
 			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdDict = dfs.DFS_main()
 			Tile.explored_tiles = Tile.idToLevelDict.keys() # to draw explored tiles
 
-	@staticmethod # TODO put together with set new source
-	def set_target_source(type):
+		elif Config.currentAlgorithm == "Dijkstra":
+			W = {} # weight dictionary that maps each tile to its cost
+			for tile in Tile.tilesDict.values():
+				W[tile.id] = tile.W
+			dijkstra = algorithms.Dijkstra(Adj, W, source, parent)
+
+			###### TODO explored tiles are not idToLevelDict, Dijkstra needs another dictionary to keep track of visited noted
+
+			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdDict = dijkstra.Dijkstra_main()
+			Tile.explored_tiles = Tile.idToLevelDict.keys() # to draw explored tiles
+
+	@staticmethod
+	def set_target_source(click):
 		(m_x, m_y) = GameController._get_clicked_tile()
 
 		if (m_x, m_y) in Tile.coordToIdDict.keys():
 			tile_id_clicked = Tile.coordToIdDict[(m_x, m_y)]
 
-			if type == "target":
+			if click == 1 and tile_id_clicked != Config.source: # left click and tile clicked is not source
 				Config.target = tile_id_clicked
-			elif type == "source":
+
+			elif click == 3 and tile_id_clicked != Config.target: # right click and tile clicked is not target
 				# avoid to put source on blocked tile
 				if Tile.tilesDict[tile_id_clicked].walkable:
 					Config.source = tile_id_clicked
 			else:
-				raise Exception("input type not valid")
+				print("bean/GameController/set_target_source: cannot place source/target")
 
 			# update shortest path
 			GameController.execute_current_algorithm()
 
 	@staticmethod
-	def set_walkable(isWalkable):
+	def set_walkable(click):
 		(m_x, m_y) = GameController._get_clicked_tile()
 
-		try:
+		if click == 1: # left click
+			isWalkable = False
+		elif click == 3: # right click
+			isWalkable = True
+		else:
+			return
+
+		if (m_x, m_y) in Tile.coordToIdDict.keys():
 			tile_id = Tile.coordToIdDict[(m_x, m_y)]
 			Tile.tilesDict[tile_id].walkable = isWalkable
 
@@ -161,8 +191,26 @@ class GameController:
 
 			Tile.build_neighbors_dict() # re-build adjacency list
 			GameController.execute_current_algorithm()
-		except:
-			pass
+
+	@staticmethod
+	def edit_tile_cost(click):
+		(m_x, m_y) = GameController._get_clicked_tile()
+
+		if (m_x, m_y) in Tile.coordToIdDict.keys():
+			tile_id_clicked = Tile.coordToIdDict[(m_x, m_y)]
+
+			if click == 1:
+				dW = 1
+			elif click == 3:
+				dW = -1
+
+			Tile.tilesDict[tile_id_clicked].W += dW
+
+			if Tile.tilesDict[tile_id_clicked].W < 1:
+				Tile.tilesDict[tile_id_clicked].W = 1
+
+			# update shortest path
+			GameController.execute_current_algorithm()
 
 	@staticmethod
 	def show_exploration():
@@ -176,7 +224,7 @@ class GameController:
 			# update explored tiles
 			new_explored_tiles = Tile.levelToIdDict[GameController.currentLevelExplored]
 
-			if isinstance(new_explored_tiles, list): # if there is a frontier
+			if isinstance(new_explored_tiles, list): # if there is a frontier, new tiles are a list
 				for new_tile in new_explored_tiles:
 					Tile.explored_tiles.append(new_tile)
 			else:
@@ -186,6 +234,12 @@ class GameController:
 			if GameController.currentLevelExplored == max(Tile.levelToIdDict.keys()):
 				print("exploration finished")
 				GameController.isShowingExploration = False
+
+				# activate set_target_source button
+				for btn in Button.buttonDict.values():
+					if btn.action == "set_target_source":
+						btn.set_active()
+						break
 
 	@staticmethod
 	def saveMap():
@@ -235,10 +289,9 @@ class Button():
 
 	def check_if_click(self, cursor):
 		if self.rect.collidepoint(cursor):
-			self.set_active()
-			print(self.action)
 
 			if self.action == "show_exploration":
+				self.set_active()
 				GameController.isShowingExploration = True
 
 				# initialize GameController show_exploration() parameters
@@ -246,7 +299,11 @@ class Button():
 				GameController.currentLevelExplored = 0
 
 			elif self.action == "save_map":
+				# don't set active
 				GameController.saveMap()
+
+			else: # set_target_source / set_walkable
+				self.set_active()
 
 	def set_active(self):
 		# first deactivate all buttons
@@ -266,7 +323,7 @@ class Button():
 			screen.fill(Color.button_ic, self.rect)
 
 		# draw_text
-		textSurf, textRect = self.text_objects(self.text, Font.font15)
+		textSurf, textRect = self.text_objects(self.text, Font.fontButton)
 		textRect.center = (self.x + self.w/2, self.y + self.h/2)
 		screen.blit(textSurf,textRect)
 
@@ -278,9 +335,9 @@ class Button():
 class Font:
 	@staticmethod
 	def set_font():
-		Font.font10 = pygame.font.Font('freesansbold.ttf', 10)
-		Font.font12 = pygame.font.Font('freesansbold.ttf', 12)
-		Font.font15 = pygame.font.Font('freesansbold.ttf', 15)
+		Font.fontId = pygame.font.Font('freesansbold.ttf', 9)
+		Font.fontLevel = pygame.font.Font('freesansbold.ttf', 13)
+		Font.fontButton = pygame.font.Font('freesansbold.ttf', 15)
 
 
 class Image:
@@ -302,7 +359,6 @@ class Image:
 
 
 class Color:
-	background = (255, 255, 102)
 	white = (255,255,255)
 	black = (0,0,0)
 	button_ic = (153, 76, 0)

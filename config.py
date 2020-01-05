@@ -8,9 +8,9 @@ class Config:
     source = "1"
     target = "288"
 
-    button_w = 200 # button width
+    button_w = 180 # button width
     button_h = 40 # button height
 
-    showExplorationDelay = 100 # delay between level exploration
+    showExplorationDelay = 0 # delay between level exploration
 
-    currentAlgorithm = "DFS" # [BFS, DFS]
+    currentAlgorithm = "Dijkstra" # [BFS, DFS, Dijkstra]

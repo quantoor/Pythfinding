@@ -1,3 +1,5 @@
+import math
+
 ####################### Breadth First Search #######################
 class BFS:
 	def __init__(self, Adj, source, target):
@@ -113,3 +115,136 @@ class DFS:
 				next_parent = self.parent[next_parent]
 			else:
 				return list(reversed(path)) # reverse list, from source to target
+
+
+
+####################### Dijkstra #######################
+class Dijkstra:
+	def __init__(self, Adj, W, source, target=None):
+		self.Adj = Adj
+		self.W = W
+		self.source = source
+		self.target = target
+		self.targetFound = False
+		N = len(Adj.keys()) # number of nodes
+
+		# initialize dictionaries
+		self.visited = {}
+		self.dist = {}
+		self.parent = {}
+		for node in Adj.keys():
+			self.visited[node] = False
+			self.dist[node] = math.inf
+			self.parent[node] = None
+
+		self.dist[source] = 0
+		self.pq = [] # priority queue
+
+	def Dijkstra_main(self):
+		self.pq_push((self.source, 0))
+
+		while len(self.pq) > 0:
+			index, minValue = self.pq_poll()
+			# print("\npopped node from priority queue: ", end="")
+			# print(pq)
+			self.visited[index] = True
+
+			if minValue > self.dist[index]: # skip outdated values
+				continue
+
+			for edge in self.Adj[index]:
+				if edge == None:
+					continue
+				# print("currently ad node %d, looking at edge %d" % (index, edge))
+				if self.visited[edge]:
+					continue
+
+				newDist = self.dist[index] + self.W[index]
+				if newDist < self.dist[edge]:
+					self.dist[edge] = newDist
+					# print("relax edge (%d, %d) with cost %d" % (index,edge,newDist))
+					self.pq_push((edge, newDist))
+					# print("added new node to priority queue: ", end="")
+					# print(pq)
+					self.parent[edge] = index
+
+					if edge == self.target:
+						self.targetFound = True
+
+		print("\n|| The graph is completely explored, Dijkstra stops. ||\n")
+
+		# pathToTargetList, idToLevelDict, None
+		return self.FSP(), self.dist, None
+
+	# for inserting an element in the queue
+	def pq_push(self, data):
+		self.pq.append(data)
+
+		# for popping an element based on Priority
+	def pq_poll(self):
+		# print("\n####################polling queue ",end="")
+		# print(self.queue)
+		# min = max(self.queue)[1]
+		min = math.inf
+		next_pair = None
+
+		for pair in self.pq: # pair (node, distance)
+			if pair[1] <= min:
+				next_pair = pair
+				min = pair[1]
+
+		# print("node to return is ",end="")
+		# print(next_node)
+		self.pq.remove(next_pair)
+		# print("now queue is ",end="")
+		# print(self.queue)
+		return next_pair
+
+	# Find Shortest Path from source to target
+	def FSP(self):
+		if not self.targetFound:
+			return None
+
+		shortest_path = [self.target] # inverted path, starting from target back to source
+		next_parent = self.parent[self.target]
+
+		while True:
+			if next_parent:
+				shortest_path.append(next_parent)
+				next_parent = self.parent[next_parent]
+			else:
+				return list(reversed(shortest_path)) # reverse list, from source to target
+
+
+def main():
+	# Adjacency list
+	Adj = {
+		"a" : ("b","c"),
+		"b" : ("d",),
+		"c" : ("b","d"),
+		"d" : ("e",),
+		"e" : (None,)
+	}
+
+	# Weight dict
+	W = {
+		("a","b") : 4,
+		("a","c") : 1,
+		("c","b") : 2,
+		("b","d") : 1,
+		("c","d") : 5,
+		("d","e") : 3
+	}
+
+	# Source
+	source = "a"
+
+	# Target
+	target = "b"
+
+	# Exectute Dijkstra
+	dijkstra = Dijkstra(Adj, W, source, target)
+	dist, parent, shortest_path = dijkstra.Dijkstra_main()
+	print(dist)
+	print(parent)
+	print(shortest_path)
