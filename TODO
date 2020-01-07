@@ -2,12 +2,14 @@ TODO:
 
 # A* algorithm
 - bidirectional search
+- split uninformed / informed search
+- button to choose algorithm
 
 - object to pickup
-- default target: None
-- if setting target on target, target = None (and algorithm just explore)
+- if setting target on target, target = None (and algorithm just explores)
 - when showing exploration, draw path after exploration is finished
 - ctrl + click to set walkable/blocked
 - save map with tiles weights
 - instructions / readme
-- button to choose algorithm
+- implement a way to measure algorithm's efficiency
+- possibility to stop show_exploration

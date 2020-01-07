@@ -1,10 +1,11 @@
 # Author: LeL
-import pygame, sys, algorithms, time
+import pygame, sys, algorithms, time, random
 from bean import *
 from config import Config
 
 
 def main():
+    random.seed(42)
     pygame.init()
 
     map_w = Config.COLS * Config.TILE_SIZE # map width
@@ -80,7 +81,7 @@ def handle_events():
 
             ### click tile
             # if Dijkstra, shift + click to change tile cost
-            if Config.currentAlgorithm == "Dijkstra":
+            if Config.currentAlgorithm == "Dijkstra" or Config.currentAlgorithm == "B_FS":
                 if pygame.key.get_mods() & pygame.KMOD_SHIFT:
                     GameController.edit_tile_cost(event.button)
                     return # avoid setting target / walkable

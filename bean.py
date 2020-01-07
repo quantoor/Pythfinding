@@ -79,7 +79,7 @@ class Tile(pygame.Rect):
 			if Config.currentAlgorithm=="BFS" or Config.currentAlgorithm=="DFS":
 				dictToDisplay = Tile.idToLevelDict
 
-			elif Config.currentAlgorithm=="Dijkstra":
+			elif Config.currentAlgorithm=="Dijkstra" or Config.currentAlgorithm=="B_FS":
 				dictToDisplay = Tile.idToCostAux
 				# print tile W
 				cost_text = Font.fontId.render(str(self.W), True, Color.white)
@@ -88,6 +88,11 @@ class Tile(pygame.Rect):
 			if self.id in dictToDisplay.keys():
 				level_text = Font.fontLevel.render(str(dictToDisplay[self.id]), True, (255, 255, 255))
 				screen.blit(level_text, (x + Config.TILE_SIZE//2 - 6, y + Config.TILE_SIZE//2 - 5)) # center of the tile
+
+
+			# display id for debug
+			id_text = Font.fontId.render(str(self.id), True, Color.white)
+			screen.blit(id_text, (x+2, y+Config.TILE_SIZE-12))
 
 	def draw_shortest_path(self, screen):
 		if not Tile.pathToTargetList:
@@ -160,6 +165,14 @@ class GameController:
 				W[tile.id] = tile.W
 			dijkstra = algorithms.Dijkstra(Adj, W, source, parent)
 			Tile.pathToTargetList, Tile.idToCostDict, Tile.levelToIdList, Tile.explored_tiles, Tile.levelToCostList = dijkstra.search()
+			Tile.idToCostAux = Tile.idToCostDict
+
+		elif Config.currentAlgorithm == "B_FS":
+			W = {} # weight dictionary that maps each tile to its cost
+			for tile in Tile.tilesDict.values():
+				W[tile.id] = tile.W
+			b_fs = algorithms.B_FS(Adj, W, source, parent)
+			Tile.pathToTargetList, Tile.idToCostDict, Tile.levelToIdList, Tile.explored_tiles, Tile.levelToCostList = b_fs.search()
 			Tile.idToCostAux = Tile.idToCostDict
 
 	@staticmethod

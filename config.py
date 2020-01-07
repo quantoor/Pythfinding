@@ -13,4 +13,4 @@ class Config:
 
     showExplorationDelay = 100 # delay between level exploration
 
-    currentAlgorithm = "Dijkstra" # [BFS, DFS, Dijkstra]
+    currentAlgorithm = "B_FS" # [BFS, DFS, Dijkstra, B_FS]
