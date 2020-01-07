@@ -79,14 +79,14 @@ class Tile(pygame.Rect):
 			if Config.currentAlgorithm=="BFS" or Config.currentAlgorithm=="DFS":
 				dictToDisplay = Tile.idToLevelDict
 
-			elif Config.currentAlgorithm=="Dijkstra" or Config.currentAlgorithm=="B_FS":
+			elif Config.currentAlgorithm=="Dijkstra" or Config.currentAlgorithm=="B_FS" or Config.currentAlgorithm=="A_star":
 				dictToDisplay = Tile.idToCostAux
 				# print tile W
 				cost_text = Font.fontId.render(str(self.W), True, Color.white)
 				screen.blit(cost_text, (x+2, y+2))
 
 			if self.id in dictToDisplay.keys():
-				level_text = Font.fontLevel.render(str(dictToDisplay[self.id]), True, (255, 255, 255))
+				level_text = Font.fontLevel.render(str(dictToDisplay[self.id]), True, Color.white)
 				screen.blit(level_text, (x + Config.TILE_SIZE//2 - 6, y + Config.TILE_SIZE//2 - 5)) # center of the tile
 
 
@@ -175,6 +175,14 @@ class GameController:
 			Tile.pathToTargetList, Tile.idToCostDict, Tile.levelToIdList, Tile.explored_tiles, Tile.levelToCostList = b_fs.search()
 			Tile.idToCostAux = Tile.idToCostDict
 
+		elif Config.currentAlgorithm == "A_star":
+			W = {} # weight dictionary that maps each tile to its cost
+			for tile in Tile.tilesDict.values():
+				W[tile.id] = tile.W
+			a_star = algorithms.A_star(Adj, W, source, parent)
+			Tile.pathToTargetList, Tile.idToCostDict, Tile.levelToIdList, Tile.explored_tiles, Tile.levelToCostList = a_star.search()
+			Tile.idToCostAux = Tile.idToCostDict
+
 	@staticmethod
 	def set_target_source(click):
 		(m_x, m_y) = GameController._get_clicked_tile()
@@ -244,8 +252,6 @@ class GameController:
 		dt = (t - GameController.ticksLastFrame)
 
 		if dt >= Config.showExplorationDelay:
-			GameController.currentLevelExplored += 1
-			GameController.ticksLastFrame = t
 
 			# update explored tiles
 			Tile.currentFrontier = Tile.levelToIdList[GameController.currentLevelExplored]
@@ -254,8 +260,8 @@ class GameController:
 			for new_tile in Tile.currentFrontier:
 				Tile.explored_tiles.append(new_tile)
 
-			# if Dijkstra, update tile cost #########THIS IS NOT ACTUALLY UPDATING, BUT SHOWING THE COST FOR THE OPTIMAL PATH
-			if Config.currentAlgorithm=="Dijkstra":
+			# if Dijkstra, update tile cost
+			if Config.currentAlgorithm=="Dijkstra" or Config.currentAlgorithm=="B_FS" or Config.currentAlgorithm=="A_star":
 				currentTile = Tile.levelToIdList[GameController.currentLevelExplored]
 				currentTile = currentTile[0]
 				Tile.idToCostAux[currentTile] = Tile.levelToCostList[GameController.currentLevelExplored]
@@ -270,6 +276,9 @@ class GameController:
 					if btn.action == "set_target_source":
 						btn.set_active()
 						break
+
+			GameController.currentLevelExplored += 1
+			GameController.ticksLastFrame = t
 
 	@staticmethod
 	def saveMap():
@@ -328,7 +337,7 @@ class Button():
 				Tile.explored_tiles = []
 				GameController.currentLevelExplored = 0
 
-				if Config.currentAlgorithm =="Dijkstra":
+				if Config.currentAlgorithm =="Dijkstra" or Config.currentAlgorithm =="B_FS" or Config.currentAlgorithm =="A_star":
 					Tile.idToCostAux = {}
 					for id in Tile.tilesDict.keys():
 						Tile.idToCostAux[id] = math.inf

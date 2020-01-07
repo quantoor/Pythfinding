@@ -81,7 +81,7 @@ def handle_events():
 
             ### click tile
             # if Dijkstra, shift + click to change tile cost
-            if Config.currentAlgorithm == "Dijkstra" or Config.currentAlgorithm == "B_FS":
+            if Config.currentAlgorithm == "Dijkstra" or Config.currentAlgorithm == "B_FS" or Config.currentAlgorithm == "A_star":
                 if pygame.key.get_mods() & pygame.KMOD_SHIFT:
                     GameController.edit_tile_cost(event.button)
                     return # avoid setting target / walkable

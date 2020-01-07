@@ -1,6 +1,15 @@
 import math
 from bean import Tile
 
+# Base abstract class
+class Algorithm:
+	def search():
+		pass
+
+	def find_path():
+		pass
+
+
 ####################### Breadth First Search #######################
 class BFS:
 	def __init__(self, Adj, source, target):
@@ -16,7 +25,6 @@ class BFS:
 		self.frontierList = [[source]]
 
 	def search(self):
-		# print("|| Breadth First Search ||")
 		i = 1
 		frontier = [self.source] #  starting frontier is source
 
@@ -44,7 +52,6 @@ class BFS:
 
 		return None, self.nodeToLevelDict, self.frontierList
 
-	# Find Shortest Path from source to target
 	def find_path(self):
 		shortest_path = [self.target] # inverted path, starting from target back to source
 		next_parent = self.parent[self.target]
@@ -55,7 +62,6 @@ class BFS:
 				next_parent = self.parent[next_parent]
 			else:
 				return list(reversed(shortest_path)) # reverse list, from source to target
-
 
 
 ####################### Depth First Search #######################
@@ -71,7 +77,6 @@ class DFS:
 		self.frontierList = [[source]] # frontier list (for DFS frontier has only 1 node but it is still a list)
 		self.currentLevel = 1
 
-	# Search with DFS
 	def search(self):
 		self.DFS_visit(self.source)
 		return self.find_path(), self.nodeToLevelDict, self.frontierList
@@ -96,7 +101,6 @@ class DFS:
 				self.parent[v] = s
 				self.DFS_visit(v)
 
-	# Find Path to target
 	def find_path(self):
 		if not self.targetFound:
 			return None
@@ -112,10 +116,9 @@ class DFS:
 				return list(reversed(path)) # reverse list, from source to target
 
 
-
 ####################### Dijkstra #######################
 # optimal but non efficient
-class Dijkstra:
+class Dijkstra: # if target!=None it is Uniform cost search
 	def __init__(self, Adj, W, source, target=None):
 		self.Adj = Adj
 		self.W = W
@@ -124,9 +127,10 @@ class Dijkstra:
 		self.targetFound = False
 		N = len(Adj.keys()) # number of nodes
 
-		self.levelToIdList = [0] # to show exploration
+		self.levelToIdList = [[source]] # to show exploration
 		self.levelToCostList = [0] # to draw cost when showing exploration
-		self.visitedList = [source] # visited means the algorithm looked at it, not necessarily expanded
+		self.visitedList = [source] # visited nodes that are expanded
+		self.exploredList = [source] # visited means the algorithm looked at it, not necessarily expanded
 
 		# initialize dictionaries
 		self.distDict = {} # maps id to g(n)
@@ -136,66 +140,38 @@ class Dijkstra:
 			self.parentDict[node] = None
 
 		self.distDict[source] = 0
-		self.pq = [] # priority queue
+		self.pq = PriorityQueue() # priority queue
 
 	def search(self):
 		level = 0
-		self.pq_push((self.source, 0))
+		self.pq.push(self.source, 0)
 
 		while len(self.pq) > 0:
-			index, minDist = self.pq_poll()
-			# self.visitedList.append(index)
+			index = self.pq.poll()
+			self.visitedList.append(index)
 			level += 1
 
 			if index == self.target: # if the target is visited, interrupt search because min dist has been found
 				self.targetFound = True
 				break
 
-			if minDist > self.distDict[index]: # skip outdated values
-				continue
-
+			newDist = self.distDict[index] + self.W[index] # which is self.distDict[edge]
 			for edge in self.Adj[index]:
-				if edge in self.visitedList: # skip if already visited
+				if edge not in self.visitedList and edge not in self.pq.keys(): # not visited and not in pq
+					self.exploredList.append(edge)
+				elif edge in self.pq.keys() and newDist < self.pq[edge]:
+					pass
+				else: # edge in frontier but worse distance
 					continue
-				self.visitedList.append(edge)
 
-				newDist = self.distDict[index] + self.W[index]
-				if newDist < self.distDict[edge]:
-					self.levelToIdList.append([edge]) # to show relaxation
-					self.levelToCostList.append(newDist) # to show relaxation
+				self.levelToIdList.append([edge]) # to show relaxation
+				self.levelToCostList.append(newDist) # to show relaxation
+				self.distDict[edge] = newDist
+				self.parentDict[edge] = index
+				self.pq.push(edge, newDist)
 
-					self.distDict[edge] = newDist
-					self.pq_push((edge, newDist))
-					self.parentDict[edge] = index
+		return self.find_path(), self.distDict, self.levelToIdList, self.exploredList, self.levelToCostList
 
-		# print("\n|| The graph is completely explored, Dijkstra stops. ||\n")
-		return self.find_path(), self.distDict, self.levelToIdList, self.visitedList, self.levelToCostList
-
-	# for inserting an element in the queue
-	def pq_push(self, data):
-		self.pq.append(data)
-
-		# for popping an element based on Priority
-	def pq_poll(self):
-		# print("\n####################polling queue ",end="")
-		# print(self.queue)
-		# min = max(self.queue)[1]
-		min = math.inf
-		next_pair = None
-
-		for pair in self.pq: # pair (node, distance)
-			if pair[1] <= min:
-				next_pair = pair
-				min = pair[1]
-
-		# print("node to return is ",end="")
-		# print(next_node)
-		self.pq.remove(next_pair)
-		# print("now queue is ",end="")
-		# print(self.queue)
-		return next_pair
-
-	# Find Shortest Path from source to target
 	def find_path(self):
 		if not self.targetFound:
 			return None
@@ -211,11 +187,10 @@ class Dijkstra:
 				return list(reversed(shortest_path)) # reverse list, from source to target
 
 
-
 ####################### Best-First Search #######################
 # non optimal but often efficient
 class B_FS:
-	def __init__(self, Adj, W, source, target=None):
+	def __init__(self, Adj, W, source, target):
 		self.Adj = Adj
 		self.W = W
 		self.source = source
@@ -223,9 +198,10 @@ class B_FS:
 		self.targetFound = False
 		N = len(Adj.keys()) # number of nodes
 
-		self.levelToIdList = [0] # to show exploration
+		self.levelToIdList = [[source]] # to show exploration
 		self.levelToCostList = [0] # to draw cost when showing exploration
-		self.visitedList = [source] # visited means the algorithm looked at it, not necessarily expanded
+		self.visitedList = [source] # visited nodes that are expanded
+		self.exploredList = [source] # visited means the algorithm looked at it, not necessarily expanded
 
 		# initialize dictionaries
 		self.distDict = {} # maps id to g(n)
@@ -234,80 +210,41 @@ class B_FS:
 		for node in Adj.keys():
 			self.distDict[node] = math.inf
 			self.parentDict[node] = None
-			self.h[node] = B_FS.compute_distance(node, target)
-			# print("(%s, %f)" % (node, self.h[node]))
+			self.h[node] = compute_distance(node, target)
 
 		self.distDict[source] = 0
-		self.pq = [] # priority queue
+		self.pq = PriorityQueue() # priority queue
 
 	def search(self):
 		level = 0
-		self.pq_push((self.source, self.h[self.source])) # (n, h(n))
+		self.pq.push(self.source, self.h[self.source]) # (n, h(n))
 
 		while len(self.pq) > 0:
-			index, min_h = self.pq_poll()
-			# self.visitedList.append(index)
+			index = self.pq.poll()
+			self.visitedList.append(index)
 			level += 1
 
 			if index == self.target: # if the target is visited, interrupt search because min dist has been found
 				self.targetFound = True
 				break
 
-			# if min_h < self.distDict[index]: # skip outdated values
-			# 	continue
-
+			newDist = self.distDict[index] + self.W[index] # which is self.distDict[edge]
 			for edge in self.Adj[index]:
-				if edge in self.visitedList: # skip if already visited
+				if edge not in self.visitedList and edge not in self.pq.keys():
+					self.exploredList.append(edge)
+				elif edge in self.pq.keys() and self.pq[edge] > newDist:
+					pass
+				else:
 					continue
-				self.visitedList.append(edge)
 
-				newDist = self.distDict[index] + self.W[index]
-				if newDist < self.distDict[edge]:
-					self.levelToIdList.append([edge]) # to show relaxation
-					self.levelToCostList.append(newDist) # to show relaxation
+				self.levelToIdList.append([edge]) # to show relaxation
+				self.levelToCostList.append(newDist) # to show relaxation
+				self.distDict[edge] = newDist
+				self.parentDict[edge] = index
+				self.pq.push(edge, self.h[edge])
 
-					self.distDict[edge] = newDist
-					self.pq_push((edge, self.h[edge]))
-					self.parentDict[edge] = index
+		return self.find_path(), self.distDict, self.levelToIdList, self.exploredList, self.levelToCostList
 
-		# print("\n|| The graph is completely explored, Dijkstra stops. ||\n")
-
-		# pathToTargetList, idToLevelDict, exploredTiles
-		return self.find_path(), self.distDict, self.levelToIdList, self.visitedList, self.levelToCostList
-
-
-	@staticmethod
-	def compute_distance(node, target):
-		nodePos = Tile.idToCoordDict[node]
-		targetPos = Tile.idToCoordDict[target]
-
-		return math.sqrt( (nodePos[0]-targetPos[0])**2 + (nodePos[1]-targetPos[1])**2 )
-
-	# for inserting an element in the queue
-	def pq_push(self, data):
-		self.pq.append(data)
-
-		# for popping an element based on Priority
-	def pq_poll(self):
-		# print("\n####################polling queue ",end="")
-		# print(self.queue)
-		# min = max(self.queue)[1]
-		min = math.inf
-		next_pair = None
-
-		for pair in self.pq: # pair (node, distance)
-			if pair[1] <= min:
-				next_pair = pair
-				min = pair[1]
-
-		# print("node to return is ",end="")
-		# print(next_node)
-		self.pq.remove(next_pair)
-		# print("now queue is ",end="")
-		# print(self.queue)
-		return next_pair
-
-	# Find Shortest Path from source to target
 	def find_path(self):
 		if not self.targetFound:
 			return None
@@ -321,3 +258,110 @@ class B_FS:
 				next_parent = self.parentDict[next_parent]
 			else:
 				return list(reversed(shortest_path)) # reverse list, from source to target
+
+
+####################### A* #######################
+# optimal and efficient
+class A_star:
+	def __init__(self, Adj, W, source, target):
+		self.Adj = Adj
+		self.W = W
+		self.source = source
+		self.target = target
+		self.targetFound = False
+		N = len(Adj.keys()) # number of nodes
+
+		self.levelToIdList = [[source]] # to show exploration
+		self.levelToCostList = [0] # to draw cost when showing exploration
+		self.visitedList = [source] # visited nodes that are expanded
+		self.exploredList = [source] # visited means the algorithm looked at it, not necessarily expanded
+
+		# initialize dictionaries
+		self.distDict = {} # maps id to g(n)
+		self.parentDict = {}
+		self.h = {} # heuristic function h(n)
+		for node in Adj.keys():
+			self.distDict[node] = math.inf
+			self.parentDict[node] = None
+			self.h[node] = compute_distance(node, target)
+
+		self.distDict[source] = 0
+		self.pq = PriorityQueue() # priority queue
+
+	def search(self):
+		level = 0
+		self.pq.push(self.source, 0 + self.h[self.source]) # (n, f = g + h)
+
+		while len(self.pq) > 0:
+			index = self.pq.poll()
+			self.visitedList.append(index)
+			level += 1
+
+			if index == self.target: # if the target is visited, interrupt search because min dist has been found
+				self.targetFound = True
+				break
+
+			for edge in self.Adj[index]:
+				new_f = self.distDict[index] + self.W[index] + self.h[edge]
+				newDist = self.distDict[index] + self.W[index]
+
+				if (edge not in self.visitedList) and (edge not in self.pq.get_keys()):
+					self.exploredList.append(edge)
+				elif (edge in self.pq.get_keys()) and (new_f < self.pq.get_value(edge)):
+					pass
+				else:
+					continue
+
+				self.levelToIdList.append([edge]) # to show relaxation
+				self.levelToCostList.append(newDist) # to show relaxation
+				self.distDict[edge] = newDist
+				self.parentDict[edge] = index
+				self.pq.push(edge, newDist + self.h[edge])
+
+		return self.find_path(), self.distDict, self.levelToIdList, self.exploredList, self.levelToCostList
+
+	def find_path(self):
+		if not self.targetFound:
+			return None
+
+		shortest_path = [self.target] # inverted path, starting from target back to source
+		next_parent = self.parentDict[self.target]
+
+		while True:
+			if next_parent:
+				shortest_path.append(next_parent)
+				next_parent = self.parentDict[next_parent]
+			else:
+				return list(reversed(shortest_path)) # reverse list, from source to target
+
+
+####################### Util #######################
+class PriorityQueue(dict):
+	def __init__(self):
+		self.queue = {}
+
+	# for inserting an element in the queue
+	def push(self, node, value):
+		self.queue[node] = value
+
+	# for popping an element based on Priority
+	def poll(self):
+		min = math.inf
+		next_node = None
+
+		for node in self.queue.keys():
+			if self.queue[node] <= min:
+				next_node = node
+				min = self.queue[node]
+
+		del self.queue[next_node]
+		return next_node
+
+	def __len__(self):
+		return len(self.queue)
+
+
+def compute_distance(tile1, tile2):
+	tile1Pos = Tile.idToCoordDict[tile1]
+	tile2Pos = Tile.idToCoordDict[tile2]
+	return math.sqrt( (tile1Pos[0]-tile2Pos[0])**2 + (tile1Pos[1]-tile2Pos[1])**2 )
