@@ -351,31 +351,6 @@ class A_star:
 
 
 ####################### Util #######################
-class PriorityQueue(dict):
-	def __init__(self):
-		self.queue = {}
-
-	# for inserting an element in the queue
-	def push(self, node, value):
-		self.queue[node] = value
-
-	# for popping an element based on Priority
-	def poll(self):
-		min = math.inf
-		next_node = None
-
-		for node in self.queue.keys():
-			if self.queue[node] <= min:
-				next_node = node
-				min = self.queue[node]
-
-		del self.queue[next_node]
-		return next_node
-
-	def __len__(self):
-		return len(self.queue)
-
-
 def poll(dic):
 	min = math.inf
 	next_node = None
