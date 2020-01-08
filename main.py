@@ -74,7 +74,7 @@ def handle_events():
         ### clicks
         elif event.type == pygame.MOUSEBUTTONDOWN:
             ### click buttons
-            if event.button == 1 or event.button==3:  # buttons are clickable only with left click
+            if event.button==1 or event.button==3:
                 for btn in Button.buttonDict.values():
                     btn.check_if_click(event.pos, event.button)
 
@@ -84,11 +84,11 @@ def handle_events():
                 GameController.set_walkable(event.button)
                 return
 
-            # if Dijkstra, shift + click to change tile cost
+            # if weights, shift + click to change tile cost
             if Config.currentAlgorithm == "Dijkstra" or Config.currentAlgorithm == "B_FS" or Config.currentAlgorithm == "A*":
                 if pygame.key.get_mods() & pygame.KMOD_SHIFT:
                     GameController.edit_tile_cost(event.button)
-                    return # avoid setting target / walkable
+                    return
 
             GameController.set_target_source(event.button)
 

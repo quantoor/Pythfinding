@@ -2,14 +2,6 @@ import math
 from bean import Tile
 from config import Config
 
-# Base abstract class
-class Algorithm:
-	def search():
-		pass
-
-	def find_path():
-		pass
-
 
 ####################### Breadth First Search #######################
 class BFS:
@@ -192,6 +184,8 @@ class Dijkstra: # if target!=None it is Uniform cost search
 # non optimal but often efficient
 class B_FS:
 	def __init__(self, Adj, W, source, target):
+		if target == None:
+			return
 		self.Adj = Adj
 		self.W = W
 		self.source = source
@@ -211,7 +205,7 @@ class B_FS:
 		for node in Adj.keys():
 			self.distDict[node] = math.inf
 			self.parentDict[node] = None
-			self.h[node] = compute_distance(node, target)
+			self.h[node] = compute_h(node, target)
 
 		self.distDict[source] = 0
 		self.pq = {} # priority queue
@@ -262,9 +256,10 @@ class B_FS:
 
 
 ####################### A* #######################
-# optimal and efficient
 class A_star:
 	def __init__(self, Adj, W, source, target):
+		if target == None:
+			return
 		self.Adj = Adj
 		self.W = W
 		self.source = source
@@ -284,7 +279,7 @@ class A_star:
 		for node in Adj.keys():
 			self.distDict[node] = math.inf
 			self.parentDict[node] = None
-			self.h[node] = compute_distance(node, target)
+			self.h[node] = compute_h(node, target)
 
 		self.distDict[source] = 0
 		self.pq = {} # priority queue
@@ -319,19 +314,11 @@ class A_star:
 					self.pq[edge] = newDist + self.h[edge]
 
 				elif (edge in self.pq.keys()) and (new_f < self.pq[edge]):
-					# print("\n\tnode %s already in queue with higher path cost -> relax edge" % edge)
-					# print("\tnode %s path cost was: %f" % (edge, self.pq[edge]))
-					# print("\tnode %s path cost now is: %f" % (edge, new_f))
 					self.levelToIdList.append([edge]) # to show relaxation
 					self.levelToCostList.append(newDist) # to show relaxation
 					self.distDict[edge] = newDist
 					self.parentDict[edge] = index
 					self.pq[edge] = newDist + self.h[edge]
-
-				# else:
-				# 	print("\n\tnode %s already in queue with better path cost -> do not relax" % edge)
-				# 	print("\tnew_f is: %f" % (new_f))
-				# 	print("\tpath cost was: %f" % (self.distDict[edge] + self.h[edge]))
 
 		return self.find_path(), self.distDict, self.levelToIdList, self.exploredList, self.levelToCostList
 
@@ -362,8 +349,8 @@ def poll(dic):
 	return next_node
 
 
-def compute_distance(tile1, tile2): # compute h
+def compute_h(tile1, tile2): # compute h
 	tile1Pos = Tile.idToCoordDict[tile1]
 	tile2Pos = Tile.idToCoordDict[tile2]
 	# Manhattan distance
-	return (abs(tile1Pos[0]-tile2Pos[0]) + abs(tile1Pos[1]-tile2Pos[1])) / Config.TILE_SIZE
+	return (abs(tile1Pos[0]-tile2Pos[0]) + abs(tile1Pos[1]-tile2Pos[1])) / 30

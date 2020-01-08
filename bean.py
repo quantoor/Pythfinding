@@ -15,7 +15,7 @@ class Tile(pygame.Rect):
 	currentFrontier = [] # used to draw the frontier when showing exploration
 
 	idToLevelDict = {} # id to level
-	idToCostDict = {} # for Dijkstra
+	idToCostDict = {} # for Dijkstra, Best-First Search and A*
 	levelToCostList = []
 	idToCostAux = {} # to display tile cost during exploration
 
@@ -90,8 +90,8 @@ class Tile(pygame.Rect):
 				screen.blit(level_text, (x + Config.TILE_SIZE//2 - 6, y + Config.TILE_SIZE//2 - 5)) # center of the tile
 
 			# display id for debug
-			id_text = Font.fontId.render(str(self.id), True, Color.white)
-			screen.blit(id_text, (x+2, y+Config.TILE_SIZE-10))
+			# id_text = Font.fontId.render(str(self.id), True, Color.white)
+			# screen.blit(id_text, (x+2, y+Config.TILE_SIZE-10))
 
 	def draw_shortest_path(self, screen):
 		if not Tile.pathToTargetList:
@@ -147,46 +147,29 @@ class GameController:
 
 	@staticmethod
 	def execute_current_algorithm():
-		Adj, source, parent = Tile.neighborsDict, Config.source, Config.target
+		Adj, source, target = Tile.neighborsDict, Config.source, Config.target
 
-		if Config.currentAlgorithm == "BFS":
-			bfs = algorithms.BFS(Adj, source, parent)
-			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdList = bfs.search()
-			GameController.currentAlg = bfs
+		W = {} # weight dictionary that maps each tile to its cost
+		for tile in Tile.tilesDict.values():
+			W[tile.id] = tile.W
+
+		algDict = {
+			"BFS" : algorithms.BFS(Adj, source, target),
+			"DFS" : algorithms.DFS(Adj, source, target),
+			"Dijkstra" : algorithms.Dijkstra(Adj, W, source, target),
+			"B_FS" : algorithms.B_FS(Adj, W, source, target),
+			"A*" : algorithms.A_star(Adj, W, source, target),
+		}
+
+		alg = algDict[Config.currentAlgorithm]
+		if Config.currentAlgorithm in ["BFS", "DFS"]:
+			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdList = alg.search()
 			Tile.explored_tiles = Tile.idToLevelDict.keys() # to draw explored tiles
 
-		elif Config.currentAlgorithm == "DFS":
-			dfs = algorithms.DFS(Adj, source, parent)
-			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdList = dfs.search()
-			GameController.currentAlg = dfs
-			Tile.explored_tiles = Tile.idToLevelDict.keys() # to draw explored tiles
-
-		elif Config.currentAlgorithm == "Dijkstra":
-			W = {} # weight dictionary that maps each tile to its cost
-			for tile in Tile.tilesDict.values():
-				W[tile.id] = tile.W
-			dijkstra = algorithms.Dijkstra(Adj, W, source, parent)
-			Tile.pathToTargetList, Tile.idToCostDict, Tile.levelToIdList, Tile.explored_tiles, Tile.levelToCostList = dijkstra.search()
-			GameController.currentAlg = dijkstra
+		elif Config.currentAlgorithm in ["Dijkstra", "B_FS", "A*"]:
+			Tile.pathToTargetList, Tile.idToCostDict, Tile.levelToIdList, Tile.explored_tiles, Tile.levelToCostList = alg.search()
 			Tile.idToCostAux = Tile.idToCostDict
-
-		elif Config.currentAlgorithm == "B_FS":
-			W = {} # weight dictionary that maps each tile to its cost
-			for tile in Tile.tilesDict.values():
-				W[tile.id] = tile.W
-			b_fs = algorithms.B_FS(Adj, W, source, parent)
-			Tile.pathToTargetList, Tile.idToCostDict, Tile.levelToIdList, Tile.explored_tiles, Tile.levelToCostList = b_fs.search()
-			GameController.currentAlg = b_fs
-			Tile.idToCostAux = Tile.idToCostDict
-
-		elif Config.currentAlgorithm == "A*":
-			W = {} # weight dictionary that maps each tile to its cost
-			for tile in Tile.tilesDict.values():
-				W[tile.id] = tile.W
-			a_star = algorithms.A_star(Adj, W, source, parent)
-			Tile.pathToTargetList, Tile.idToCostDict, Tile.levelToIdList, Tile.explored_tiles, Tile.levelToCostList = a_star.search()
-			GameController.currentAlg = a_star
-			Tile.idToCostAux = Tile.idToCostDict
+		GameController.currentAlg = alg
 
 	@staticmethod
 	def set_target_source(click):
@@ -196,7 +179,10 @@ class GameController:
 			tile_id_clicked = Tile.coordToIdDict[(m_x, m_y)]
 
 			if click == 1 and tile_id_clicked != Config.source: # left click and tile clicked is not source
-				Config.target = tile_id_clicked
+				if tile_id_clicked == Config.target and Config.currentAlgorithm in ["BFS","DFS","Dijkstra"]:
+					Config.target = None
+				else:
+					Config.target = tile_id_clicked
 
 			elif click == 3 and tile_id_clicked != Config.target: # right click and tile clicked is not target
 				# avoid to put source on blocked tile
@@ -273,18 +259,10 @@ class GameController:
 
 			# show_exploration finish
 			if GameController.currentLevelExplored == len(Tile.levelToIdList)-1:
-				### show path gradually
-				Tile.pathToTargetList = GameController.currentAlg.find_path()
+				Tile.pathToTargetList = GameController.currentAlg.find_path() # show path at the end of exploration
 
 				print("exploration finished")
 				GameController.isShowingExploration = False
-
-				# deprecated
-				# activate set_target_source button
-				# for btn in Button.buttonDict.values():
-				# 	if btn.action == "set_target_source":
-				# 		btn.set_active()
-				# 		break
 
 			GameController.currentLevelExplored += 1
 			GameController.ticksLastFrame = t
@@ -308,6 +286,9 @@ class GameController:
 
 		Config.currentAlgorithm = Config.algList[algIdx]
 		print("current algorithm: %s" % Config.currentAlgorithm)
+
+		if Config.currentAlgorithm in ["B_FS", "A*"] and Config.target==None:
+			GameController.set_random_target() # informed search needs a target
 		GameController.execute_current_algorithm()
 
 	@staticmethod
@@ -326,6 +307,13 @@ class GameController:
 		m_x = (m_pos[0] - Config.PADDING) // Config.TILE_SIZE
 		m_y = (m_pos[1] - Config.PADDING - Config.margin_top) // Config.TILE_SIZE
 		return (m_x, m_y)
+
+	@staticmethod
+	def set_random_target():
+		for tile in Tile.tilesDict.values():
+			if tile.walkable and tile.id != Config.source:
+				Config.target = tile.id
+				return
 
 
 class Button:
@@ -377,10 +365,6 @@ class Button:
 
 				# update button text
 				self.text = "Alg: " + Config.currentAlgorithm
-
-			# deprecated
-			# else: # set_target_source / set_walkable
-			# 	self.set_active()
 
 	def set_active(self):
 		# first deactivate all buttons

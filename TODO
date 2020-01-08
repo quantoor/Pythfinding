@@ -1,12 +1,10 @@
 TODO:
 
+- show distances in BFS and DFS during show exploration
 - show exploration during algorithm execution
-- split uninformed / informed search
 - bidirectional search
 
 - object to pickup
-- if setting target on target, target = None (and algorithm just explores)
 - save map with tiles weights
-- instructions / readme
-- implement a way to measure algorithm's efficiency
-- possibility to stop show_exploration
+- possibility to stop show exploration
+- instructions / readme / display algorithm info
