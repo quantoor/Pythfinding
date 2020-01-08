@@ -1,5 +1,6 @@
 import math
 from bean import Tile
+from config import Config
 
 # Base abstract class
 class Algorithm:
@@ -140,14 +141,14 @@ class Dijkstra: # if target!=None it is Uniform cost search
 			self.parentDict[node] = None
 
 		self.distDict[source] = 0
-		self.pq = PriorityQueue() # priority queue
+		self.pq = {} # priority queue
 
 	def search(self):
 		level = 0
-		self.pq.push(self.source, 0)
+		self.pq[self.source] = 0
 
 		while len(self.pq) > 0:
-			index = self.pq.poll()
+			index = poll(self.pq)
 			self.visitedList.append(index)
 			level += 1
 
@@ -168,7 +169,7 @@ class Dijkstra: # if target!=None it is Uniform cost search
 				self.levelToCostList.append(newDist) # to show relaxation
 				self.distDict[edge] = newDist
 				self.parentDict[edge] = index
-				self.pq.push(edge, newDist)
+				self.pq[edge] = newDist
 
 		return self.find_path(), self.distDict, self.levelToIdList, self.exploredList, self.levelToCostList
 
@@ -213,14 +214,14 @@ class B_FS:
 			self.h[node] = compute_distance(node, target)
 
 		self.distDict[source] = 0
-		self.pq = PriorityQueue() # priority queue
+		self.pq = {} # priority queue
 
 	def search(self):
 		level = 0
-		self.pq.push(self.source, self.h[self.source]) # (n, h(n))
+		self.pq[self.source] = self.h[self.source]
 
 		while len(self.pq) > 0:
-			index = self.pq.poll()
+			index = poll(self.pq)
 			self.visitedList.append(index)
 			level += 1
 
@@ -241,7 +242,7 @@ class B_FS:
 				self.levelToCostList.append(newDist) # to show relaxation
 				self.distDict[edge] = newDist
 				self.parentDict[edge] = index
-				self.pq.push(edge, self.h[edge])
+				self.pq[edge] = self.h[edge]
 
 		return self.find_path(), self.distDict, self.levelToIdList, self.exploredList, self.levelToCostList
 
@@ -286,15 +287,17 @@ class A_star:
 			self.h[node] = compute_distance(node, target)
 
 		self.distDict[source] = 0
-		self.pq = PriorityQueue() # priority queue
+		self.pq = {} # priority queue
 
 	def search(self):
+		# print("\n\n### A* starting search")
 		level = 0
-		self.pq.push(self.source, 0 + self.h[self.source]) # (n, f = g + h)
+		self.pq[self.source] = 0 + self.h[self.source] # (n, f = g + h)
 
 		while len(self.pq) > 0:
-			index = self.pq.poll()
+			index = poll(self.pq)
 			self.visitedList.append(index)
+			# print("visiting node %s" % index)
 			level += 1
 
 			if index == self.target: # if the target is visited, interrupt search because min dist has been found
@@ -304,19 +307,31 @@ class A_star:
 			for edge in self.Adj[index]:
 				new_f = self.distDict[index] + self.W[index] + self.h[edge]
 				newDist = self.distDict[index] + self.W[index]
+				# print("\n\tlooking at node %s" % edge)
 
-				if (edge not in self.visitedList) and (edge not in self.pq.get_keys()):
+				if (edge not in self.visitedList) and (edge not in self.pq.keys()):
+					# print("\tnode %s is not visited or in queue. g = %f, h = %f, f = %f" % (edge, newDist, self.h[edge], new_f))
 					self.exploredList.append(edge)
-				elif (edge in self.pq.get_keys()) and (new_f < self.pq.get_value(edge)):
-					pass
-				else:
-					continue
+					self.levelToIdList.append([edge]) # to show relaxation
+					self.levelToCostList.append(newDist) # to show relaxation
+					self.distDict[edge] = newDist
+					self.parentDict[edge] = index
+					self.pq[edge] = newDist + self.h[edge]
 
-				self.levelToIdList.append([edge]) # to show relaxation
-				self.levelToCostList.append(newDist) # to show relaxation
-				self.distDict[edge] = newDist
-				self.parentDict[edge] = index
-				self.pq.push(edge, newDist + self.h[edge])
+				elif (edge in self.pq.keys()) and (new_f < self.pq[edge]):
+					# print("\n\tnode %s already in queue with higher path cost -> relax edge" % edge)
+					# print("\tnode %s path cost was: %f" % (edge, self.pq[edge]))
+					# print("\tnode %s path cost now is: %f" % (edge, new_f))
+					self.levelToIdList.append([edge]) # to show relaxation
+					self.levelToCostList.append(newDist) # to show relaxation
+					self.distDict[edge] = newDist
+					self.parentDict[edge] = index
+					self.pq[edge] = newDist + self.h[edge]
+
+				# else:
+				# 	print("\n\tnode %s already in queue with better path cost -> do not relax" % edge)
+				# 	print("\tnew_f is: %f" % (new_f))
+				# 	print("\tpath cost was: %f" % (self.distDict[edge] + self.h[edge]))
 
 		return self.find_path(), self.distDict, self.levelToIdList, self.exploredList, self.levelToCostList
 
@@ -361,7 +376,19 @@ class PriorityQueue(dict):
 		return len(self.queue)
 
 
+def poll(dic):
+	min = math.inf
+	next_node = None
+	for node in dic.keys():
+		if dic[node] <= min:
+			next_node = node
+			min = dic[node]
+	del dic[next_node]
+	return next_node
+
+
 def compute_distance(tile1, tile2):
 	tile1Pos = Tile.idToCoordDict[tile1]
 	tile2Pos = Tile.idToCoordDict[tile2]
-	return math.sqrt( (tile1Pos[0]-tile2Pos[0])**2 + (tile1Pos[1]-tile2Pos[1])**2 )
+	# Manhattan distance
+	return (abs(tile1Pos[0]-tile2Pos[0]) + abs(tile1Pos[1]-tile2Pos[1])) / Config.TILE_SIZE
