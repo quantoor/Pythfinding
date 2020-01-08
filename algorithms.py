@@ -362,7 +362,7 @@ def poll(dic):
 	return next_node
 
 
-def compute_distance(tile1, tile2):
+def compute_distance(tile1, tile2): # compute h
 	tile1Pos = Tile.idToCoordDict[tile1]
 	tile2Pos = Tile.idToCoordDict[tile2]
 	# Manhattan distance

@@ -15,7 +15,7 @@ def main():
     screen_h = map_h + 2*Config.PADDING + Config.margin_top # screen height
 
     screen = pygame.display.set_mode((screen_w, screen_h))
-    pygame.display.set_caption("Pathfinding")
+    pygame.display.set_caption("Pythinding")
 
 
     Font.set_font() # initialize fonts
@@ -35,10 +35,9 @@ def main():
     GameController.execute_current_algorithm()
 
     # create buttons
-    Button(0, 0, Config.button_w, Config.button_h, "Set Target/Source", "set_target_source")
-    Button(Config.button_w, 0, Config.button_w, Config.button_h, "Set Walkable/Blocked", "set_walkable")
-    Button(2*Config.button_w, 0, Config.button_w, Config.button_h, "Show Exploration", "show_exploration")
-    Button(3*Config.button_w, 0, Config.button_w, Config.button_h, "Save Map", "save_map")
+    Button(0*Config.button_w, 0, Config.button_w, Config.button_h, "Show Exploration", "show_exploration")
+    Button(Config.button_w, 0, Config.button_w, Config.button_h, "Alg: " + Config.currentAlgorithm, "switch_alg")
+    Button(screen_w-100, 0, 100, Config.button_h, "Save Map", "save_map")
 
 
     # starting game
@@ -75,24 +74,23 @@ def handle_events():
         ### clicks
         elif event.type == pygame.MOUSEBUTTONDOWN:
             ### click buttons
-            if event.button == 1:  # buttons are clickable only with left click
+            if event.button == 1 or event.button==3:  # buttons are clickable only with left click
                 for btn in Button.buttonDict.values():
-                    btn.check_if_click(event.pos)
+                    btn.check_if_click(event.pos, event.button)
 
             ### click tile
+            # ctrl + click to set tile walkable/blocked
+            if pygame.key.get_mods() & pygame.KMOD_CTRL:
+                GameController.set_walkable(event.button)
+                return
+
             # if Dijkstra, shift + click to change tile cost
-            if Config.currentAlgorithm == "Dijkstra" or Config.currentAlgorithm == "B_FS" or Config.currentAlgorithm == "A_star":
+            if Config.currentAlgorithm == "Dijkstra" or Config.currentAlgorithm == "B_FS" or Config.currentAlgorithm == "A*":
                 if pygame.key.get_mods() & pygame.KMOD_SHIFT:
                     GameController.edit_tile_cost(event.button)
                     return # avoid setting target / walkable
 
-            if Button.buttonDict["set_target_source"].active:
-                GameController.set_target_source(event.button)
-                return
-
-            elif Button.buttonDict["set_walkable"].active:
-                GameController.set_walkable(event.button)
-                return
+            GameController.set_target_source(event.button)
 
 
 if __name__ == '__main__':

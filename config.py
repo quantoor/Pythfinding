@@ -1,7 +1,7 @@
 class Config:
-    ROWS = 12 # number of rows
-    COLS = 24 # number of cols
-    TILE_SIZE = 50 # px
+    ROWS = 15 # number of rows
+    COLS = 2*ROWS # number of cols
+    TILE_SIZE = 45 # px
     PADDING = 20 # px
     margin_top = 40
     FPS = 60
@@ -13,4 +13,5 @@ class Config:
 
     showExplorationDelay = 10 # delay between level exploration
 
-    currentAlgorithm = "A_star" # [BFS, DFS, Dijkstra, B_FS, A_star]
+    algList = ["BFS", "DFS", "B_FS", "Dijkstra", "A*"]
+    currentAlgorithm = "Dijkstra"

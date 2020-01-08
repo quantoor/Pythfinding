@@ -79,7 +79,7 @@ class Tile(pygame.Rect):
 			if Config.currentAlgorithm=="BFS" or Config.currentAlgorithm=="DFS":
 				dictToDisplay = Tile.idToLevelDict
 
-			elif Config.currentAlgorithm=="Dijkstra" or Config.currentAlgorithm=="B_FS" or Config.currentAlgorithm=="A_star":
+			elif Config.currentAlgorithm=="Dijkstra" or Config.currentAlgorithm=="B_FS" or Config.currentAlgorithm=="A*":
 				dictToDisplay = Tile.idToCostAux
 				# print tile W
 				cost_text = Font.fontId.render(str(self.W), True, Color.white)
@@ -91,7 +91,7 @@ class Tile(pygame.Rect):
 
 			# display id for debug
 			id_text = Font.fontId.render(str(self.id), True, Color.white)
-			screen.blit(id_text, (x+2, y+Config.TILE_SIZE-12))
+			screen.blit(id_text, (x+2, y+Config.TILE_SIZE-10))
 
 	def draw_shortest_path(self, screen):
 		if not Tile.pathToTargetList:
@@ -179,7 +179,7 @@ class GameController:
 			GameController.currentAlg = b_fs
 			Tile.idToCostAux = Tile.idToCostDict
 
-		elif Config.currentAlgorithm == "A_star":
+		elif Config.currentAlgorithm == "A*":
 			W = {} # weight dictionary that maps each tile to its cost
 			for tile in Tile.tilesDict.values():
 				W[tile.id] = tile.W
@@ -266,7 +266,7 @@ class GameController:
 				Tile.explored_tiles.append(new_tile)
 
 			# if Dijkstra, update tile cost
-			if Config.currentAlgorithm=="Dijkstra" or Config.currentAlgorithm=="B_FS" or Config.currentAlgorithm=="A_star":
+			if Config.currentAlgorithm=="Dijkstra" or Config.currentAlgorithm=="B_FS" or Config.currentAlgorithm=="A*":
 				currentTile = Tile.levelToIdList[GameController.currentLevelExplored]
 				currentTile = currentTile[0]
 				Tile.idToCostAux[currentTile] = Tile.levelToCostList[GameController.currentLevelExplored]
@@ -279,11 +279,12 @@ class GameController:
 				print("exploration finished")
 				GameController.isShowingExploration = False
 
+				# deprecated
 				# activate set_target_source button
-				for btn in Button.buttonDict.values():
-					if btn.action == "set_target_source":
-						btn.set_active()
-						break
+				# for btn in Button.buttonDict.values():
+				# 	if btn.action == "set_target_source":
+				# 		btn.set_active()
+				# 		break
 
 			GameController.currentLevelExplored += 1
 			GameController.ticksLastFrame = t
@@ -294,6 +295,20 @@ class GameController:
 		with open('map.json', 'w') as f:
 		    json.dump(GameController.mapData, f)
 		print("map saved to file")
+
+	@staticmethod
+	def switch_alg(click):
+		algIdx = Config.algList.index(Config.currentAlgorithm)
+
+		if click == 1 and algIdx < len(Config.algList)-1:
+			algIdx += 1
+
+		elif click == 3 and algIdx > 0:
+			algIdx -= 1
+
+		Config.currentAlgorithm = Config.algList[algIdx]
+		print("current algorithm: %s" % Config.currentAlgorithm)
+		GameController.execute_current_algorithm()
 
 	@staticmethod
 	def load_map():
@@ -334,7 +349,7 @@ class Button:
 
 		Button.buttonDict[self.action] = self # map button action to button
 
-	def check_if_click(self, cursor):
+	def check_if_click(self, cursor, click):
 		if self.rect.collidepoint(cursor):
 
 			if self.action == "show_exploration":
@@ -348,18 +363,24 @@ class Button:
 				# initialize path to target to null
 				Tile.pathToTargetList = []
 
-				if Config.currentAlgorithm =="Dijkstra" or Config.currentAlgorithm =="B_FS" or Config.currentAlgorithm =="A_star":
+				if Config.currentAlgorithm =="Dijkstra" or Config.currentAlgorithm =="B_FS" or Config.currentAlgorithm =="A*":
 					# initialize all tiles cost to inf
 					Tile.idToCostAux = {}
 					for id in Tile.tilesDict.keys():
 						Tile.idToCostAux[id] = math.inf
 
 			elif self.action == "save_map":
-				# don't set active
 				GameController.saveMap()
 
-			else: # set_target_source / set_walkable
-				self.set_active()
+			elif self.action == "switch_alg":
+				GameController.switch_alg(click)
+
+				# update button text
+				self.text = "Alg: " + Config.currentAlgorithm
+
+			# deprecated
+			# else: # set_target_source / set_walkable
+			# 	self.set_active()
 
 	def set_active(self):
 		# first deactivate all buttons

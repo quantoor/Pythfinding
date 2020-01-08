@@ -1,14 +1,11 @@
 TODO:
 
 - show exploration during algorithm execution
-- when showing exploration, draw path after exploration is finished
 - split uninformed / informed search
-- button to choose algorithm
 - bidirectional search
 
 - object to pickup
 - if setting target on target, target = None (and algorithm just explores)
-- ctrl + click to set walkable/blocked
 - save map with tiles weights
 - instructions / readme
 - implement a way to measure algorithm's efficiency
