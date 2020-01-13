@@ -1,8 +1,6 @@
 TODO:
-
 - show distances in BFS and DFS during show exploration
 - show exploration during algorithm execution
-- bidirectional search
 
 - object to pickup
 - save map with tiles weights

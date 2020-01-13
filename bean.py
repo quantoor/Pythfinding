@@ -39,7 +39,7 @@ class Tile(pygame.Rect):
 		if self.id in Tile.blockedTiles:
 			self.walkable = False
 
-		self.W = random.randint(1,10) # default cost for Dijkstra
+		self.W = random.randint(1,3) # default cost for Dijkstra
 
 	def draw_tile(self, screen):
 		# draw tiles
@@ -48,13 +48,18 @@ class Tile(pygame.Rect):
 
 		# draw walkable / blocked
 		if self.walkable:
-			screen.blit(Image.tileWalkableImage, (x, y))
+			if self.W == 1 or Config.currentAlgorithm in ["BFS", "DFS"]:
+				screen.blit(Image.tileWalkable1Image, (x, y))
+			elif self.W == 2:
+				screen.blit(Image.tileWalkable2Image, (x, y))
+			elif self.W == 3:
+				screen.blit(Image.tileWalkable3Image, (x, y))
 		else:
 			screen.blit(Image.tileBlockedImage, (x, y))
 
 		# add dark mask if not explored
 		if self.id not in Tile.explored_tiles and self.walkable:
-			screen.blit(Image.tileExploredImage, (x, y))
+			screen.blit(Image.tileUnvisitedImage, (x, y))
 
 		# draw source and target
 		if self.id == Config.source:
@@ -81,9 +86,9 @@ class Tile(pygame.Rect):
 
 			elif Config.currentAlgorithm=="Dijkstra" or Config.currentAlgorithm=="B_FS" or Config.currentAlgorithm=="A*":
 				dictToDisplay = Tile.idToCostAux
-				# print tile W
-				cost_text = Font.fontId.render(str(self.W), True, Color.white)
-				screen.blit(cost_text, (x+2, y+2))
+				# print tile W for debug
+				# cost_text = Font.fontId.render(str(self.W), True, Color.white)
+				# screen.blit(cost_text, (x+2, y+2))
 
 			if self.id in dictToDisplay.keys():
 				level_text = Font.fontLevel.render(str(dictToDisplay[self.id]), True, Color.white)
@@ -300,7 +305,6 @@ class GameController:
 			Tile.blockedTiles = GameController.mapData["blocked_tiles"]
 			print("map loaded from file")
 
-	### Private methods ###
 	@staticmethod
 	def _get_clicked_tile():
 		m_pos = pygame.mouse.get_pos()
@@ -310,6 +314,8 @@ class GameController:
 
 	@staticmethod
 	def set_random_target():
+		# this is used when the current algorithm is uninformed search and target is None,
+		# and the algorithm is switched to informed search, which needs a target
 		for tile in Tile.tilesDict.values():
 			if tile.walkable and tile.id != Config.source:
 				Config.target = tile.id
@@ -404,21 +410,25 @@ class Font:
 class Image:
 	tileSourceImage = pygame.image.load("img/tile_source.png")
 	tileTargetImage = pygame.image.load("img/tile_target.png")
-	tileWalkableImage = pygame.image.load("img/tile_walkable.png")
-	tileBlockedImage = pygame.image.load("img/tile_blocked.png")
-	tileExploredImage = pygame.image.load("img/tile_explored.png")
+	walkable1 = pygame.image.load("img/walkable1.jpg")
+	walkable2 = pygame.image.load("img/walkable2.jpg")
+	walkable3 = pygame.image.load("img/walkable3.jpg")
+	tileBlockedImage = pygame.image.load("img/blocked.jpg")
+	tileUnvisited = pygame.image.load("img/unvisited.png")
 	shortestPathImage = pygame.image.load("img/shortest_path.png")
 	frontierImage = pygame.image.load("img/frontier.png")
-	backgroundImage = pygame.image.load("img/tile_blocked.png")
+	backgroundImage = pygame.image.load("img/blocked.jpg")
 
 	tileSourceImage = pygame.transform.scale(tileSourceImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	tileTargetImage = pygame.transform.scale(tileTargetImage, (Config.TILE_SIZE, Config.TILE_SIZE))
-	tileWalkableImage = pygame.transform.scale(tileWalkableImage, (Config.TILE_SIZE, Config.TILE_SIZE))
+	tileWalkable1Image = pygame.transform.scale(walkable1, (Config.TILE_SIZE, Config.TILE_SIZE))
+	tileWalkable2Image = pygame.transform.scale(walkable2, (Config.TILE_SIZE, Config.TILE_SIZE))
+	tileWalkable3Image = pygame.transform.scale(walkable3, (Config.TILE_SIZE, Config.TILE_SIZE))
 	tileBlockedImage = pygame.transform.scale(tileBlockedImage, (Config.TILE_SIZE, Config.TILE_SIZE))
-	tileExploredImage = pygame.transform.scale(tileExploredImage, (Config.TILE_SIZE, Config.TILE_SIZE))
+	tileUnvisitedImage = pygame.transform.scale(tileUnvisited, (Config.TILE_SIZE, Config.TILE_SIZE))
 	frontierImage = pygame.transform.scale(frontierImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	shortestPathImage = pygame.transform.scale(shortestPathImage, (Config.TILE_SIZE, Config.TILE_SIZE))
-	backgroundImage = pygame.transform.scale(backgroundImage, (1920,1080))
+	backgroundImage = pygame.transform.scale(backgroundImage, (1920, 1080))
 
 
 class Color:

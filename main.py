@@ -53,7 +53,7 @@ def main():
 
 
 def draw_game(screen):
-    screen.blit(Image.backgroundImage, (0, Config.margin_top)) # padding background
+    screen.blit(Image.backgroundImage, (0, 0)) # padding background
 
     for tile in Tile.tilesDict.values():
         tile.draw_tile(screen)

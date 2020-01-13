@@ -353,4 +353,4 @@ def compute_h(tile1, tile2): # compute h
 	tile1Pos = Tile.idToCoordDict[tile1]
 	tile2Pos = Tile.idToCoordDict[tile2]
 	# Manhattan distance
-	return (abs(tile1Pos[0]-tile2Pos[0]) + abs(tile1Pos[1]-tile2Pos[1])) / 30
+	return (abs(tile1Pos[0]-tile2Pos[0]) + abs(tile1Pos[1]-tile2Pos[1])) / Config.TILE_SIZE
