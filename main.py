@@ -87,7 +87,7 @@ def handle_events():
                 return
 
             # if weights, shift + click to change tile cost
-            if Config.currentAlgorithm == "Dijkstra" or Config.currentAlgorithm == "B_FS" or Config.currentAlgorithm == "A*":
+            if Config.currentAlgorithm in ["Dijkstra", "B_FS", "A*"]:
                 if pygame.key.get_mods() & pygame.KMOD_SHIFT:
                     GameController.edit_tile_cost(event.button)
                     return

@@ -17,6 +17,7 @@ class Tile(pygame.Rect):
 	idToLevelDict = {} # id to level
 	idToCostDict = {} # for Dijkstra, Best-First Search and A*
 	levelToCostList = []
+	idToLevelAux = {}
 	idToCostAux = {} # to display tile cost during exploration
 
 	blockedTiles = [] # list of blocked tiles
@@ -36,9 +37,6 @@ class Tile(pygame.Rect):
 		Tile.idToCoordDict[self.id] = (self.x, self.y)
 
 		self.walkable = True
-		if self.id in Tile.blockedTiles:
-			self.walkable = False
-
 		self.W = random.randint(1,3) # default cost for Dijkstra
 
 	def draw_tile(self, screen):
@@ -48,6 +46,7 @@ class Tile(pygame.Rect):
 
 		# draw walkable / blocked
 		if self.walkable:
+			# draw tile sprite according to tile weight
 			if self.W == 1 or Config.currentAlgorithm in ["BFS", "DFS"]:
 				screen.blit(Image.tileWalkable1Image, (x, y))
 			elif self.W == 2:
@@ -67,6 +66,8 @@ class Tile(pygame.Rect):
 		elif self.id == Config.target:
 			screen.blit(Image.tileTargetImage, (x, y))
 
+		screen.blit(Image.borderImage, (x,y))
+
 		# if showing exploration, draw current frontier
 		if GameController.isShowingExploration:
 			for frontierTileId in Tile.currentFrontier:
@@ -81,10 +82,11 @@ class Tile(pygame.Rect):
 
 		if self.walkable:
 			# print level
-			if Config.currentAlgorithm=="BFS" or Config.currentAlgorithm=="DFS":
-				dictToDisplay = Tile.idToLevelDict
+			if Config.currentAlgorithm in ["BFS", "DFS"]:
+				# dictToDisplay = Tile.idToLevelDict
+				dictToDisplay = Tile.idToLevelAux
 
-			elif Config.currentAlgorithm=="Dijkstra" or Config.currentAlgorithm=="B_FS" or Config.currentAlgorithm=="A*":
+			elif Config.currentAlgorithm in ["Dijkstra", "B_FS", "A*"]:
 				dictToDisplay = Tile.idToCostAux
 				# print tile W for debug
 				# cost_text = Font.fontId.render(str(self.W), True, Color.white)
@@ -170,6 +172,7 @@ class GameController:
 		if Config.currentAlgorithm in ["BFS", "DFS"]:
 			Tile.pathToTargetList, Tile.idToLevelDict, Tile.levelToIdList = alg.search()
 			Tile.explored_tiles = Tile.idToLevelDict.keys() # to draw explored tiles
+			Tile.idToLevelAux = Tile.idToLevelDict
 
 		elif Config.currentAlgorithm in ["Dijkstra", "B_FS", "A*"]:
 			Tile.pathToTargetList, Tile.idToCostDict, Tile.levelToIdList, Tile.explored_tiles, Tile.levelToCostList = alg.search()
@@ -238,6 +241,8 @@ class GameController:
 
 			if Tile.tilesDict[tile_id_clicked].W < 1:
 				Tile.tilesDict[tile_id_clicked].W = 1
+			elif Tile.tilesDict[tile_id_clicked].W > 3:
+				Tile.tilesDict[tile_id_clicked].W = 3
 
 			# update shortest path
 			GameController.execute_current_algorithm()
@@ -256,8 +261,18 @@ class GameController:
 			for new_tile in Tile.currentFrontier:
 				Tile.explored_tiles.append(new_tile)
 
-			# if Dijkstra, update tile cost
-			if Config.currentAlgorithm=="Dijkstra" or Config.currentAlgorithm=="B_FS" or Config.currentAlgorithm=="A*":
+			# update tile cost
+			if Config.currentAlgorithm=="BFS":
+				currentTile = Tile.levelToIdList[GameController.currentLevelExplored]
+				for tl in currentTile:
+					Tile.idToLevelAux[tl] = Tile.idToLevelDict[Tile.levelToIdList[GameController.currentLevelExplored][0]]
+
+			elif Config.currentAlgorithm=="DFS":
+				currentTile = Tile.levelToIdList[GameController.currentLevelExplored]
+				currentTile = currentTile[0]
+				Tile.idToLevelAux[currentTile] = Tile.idToLevelDict[Tile.levelToIdList[GameController.currentLevelExplored][0]]
+
+			elif Config.currentAlgorithm in ["Dijkstra", "B_FS", "A*"]:
 				currentTile = Tile.levelToIdList[GameController.currentLevelExplored]
 				currentTile = currentTile[0]
 				Tile.idToCostAux[currentTile] = Tile.levelToCostList[GameController.currentLevelExplored]
@@ -265,7 +280,6 @@ class GameController:
 			# show_exploration finish
 			if GameController.currentLevelExplored == len(Tile.levelToIdList)-1:
 				Tile.pathToTargetList = GameController.currentAlg.find_path() # show path at the end of exploration
-
 				print("exploration finished")
 				GameController.isShowingExploration = False
 
@@ -314,7 +328,6 @@ class GameController:
 			if tile.id in Tile.blockedTiles:
 				tile.walkable = False
 			tile.W = idToWDict[tile.id]
-			# print("tile %s has W %f" % (tile.id, tile.W))
 
 		print("map loaded from file")
 
@@ -360,7 +373,7 @@ class Button:
 		if self.rect.collidepoint(cursor):
 
 			if self.action == "show_exploration":
-				self.set_active()
+				# self.set_active()
 				GameController.isShowingExploration = True
 
 				# initialize GameController show_exploration() parameters
@@ -370,7 +383,10 @@ class Button:
 				# initialize path to target to null
 				Tile.pathToTargetList = []
 
-				if Config.currentAlgorithm =="Dijkstra" or Config.currentAlgorithm =="B_FS" or Config.currentAlgorithm =="A*":
+				if Config.currentAlgorithm in ["BFS", "DFS"]:
+					Tile.idToLevelAux = {}
+
+				elif Config.currentAlgorithm in ["Dijkstra", "B_FS", "A*"]:
 					# initialize all tiles cost to inf
 					Tile.idToCostAux = {}
 					for id in Tile.tilesDict.keys():
@@ -381,10 +397,10 @@ class Button:
 
 			elif self.action == "switch_alg":
 				GameController.switch_alg(click)
-
 				# update button text
 				self.text = "Alg: " + Config.currentAlgorithm
 
+	# deprecated
 	def set_active(self):
 		# first deactivate all buttons
 		for btn in Button.buttonDict.values():
@@ -396,7 +412,7 @@ class Button:
 	def draw_button(self, screen):
 		mouse = pygame.mouse.get_pos() # to check if mouse is hovering
 		if (self.x < mouse[0] < self.x+self.w and self.y < mouse[1] < self.y+self.h) \
-			or self.active:
+			or (self.action=="show_exploration" and GameController.isShowingExploration):
 			# draw highlighted button
 			screen.fill(Color.button_ac, self.rect)
 		else:
@@ -430,6 +446,7 @@ class Image:
 	tileUnvisited = pygame.image.load("img/unvisited.png")
 	shortestPathImage = pygame.image.load("img/shortest_path.png")
 	frontierImage = pygame.image.load("img/frontier.png")
+	border = pygame.image.load("img/border.png")
 	backgroundImage = pygame.image.load("img/blocked.jpg")
 
 	tileSourceImage = pygame.transform.scale(tileSourceImage, (Config.TILE_SIZE, Config.TILE_SIZE))
@@ -441,6 +458,7 @@ class Image:
 	tileUnvisitedImage = pygame.transform.scale(tileUnvisited, (Config.TILE_SIZE, Config.TILE_SIZE))
 	frontierImage = pygame.transform.scale(frontierImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	shortestPathImage = pygame.transform.scale(shortestPathImage, (Config.TILE_SIZE, Config.TILE_SIZE))
+	borderImage = pygame.transform.scale(border, (Config.TILE_SIZE, Config.TILE_SIZE))
 	backgroundImage = pygame.transform.scale(backgroundImage, (1920, 1080))
 
 
