@@ -274,7 +274,12 @@ class GameController:
 
 	@staticmethod
 	def saveMap():
-		GameController.mapData = {"target":Config.target, "source":Config.source, "blocked_tiles":Tile.blockedTiles}
+
+		idToWDict = {}
+		for tile in Tile.tilesDict.values():
+			idToWDict[tile.id] = tile.W
+
+		GameController.mapData = {"target":Config.target, "source":Config.source, "blocked_tiles":Tile.blockedTiles, "tile_w":idToWDict}
 		with open('map.json', 'w') as f:
 		    json.dump(GameController.mapData, f)
 		print("map saved to file")
@@ -303,7 +308,15 @@ class GameController:
 			Config.source = GameController.mapData["source"]
 			Config.target = GameController.mapData["target"]
 			Tile.blockedTiles = GameController.mapData["blocked_tiles"]
-			print("map loaded from file")
+			idToWDict = GameController.mapData["tile_w"]
+
+		for tile in Tile.tilesDict.values():
+			if tile.id in Tile.blockedTiles:
+				tile.walkable = False
+			tile.W = idToWDict[tile.id]
+			# print("tile %s has W %f" % (tile.id, tile.W))
+
+		print("map loaded from file")
 
 	@staticmethod
 	def _get_clicked_tile():

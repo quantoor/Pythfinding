@@ -21,12 +21,14 @@ def main():
     Font.set_font() # initialize fonts
 
     # initialize tiles
-    GameController.load_map() # load blocked tiles
+    # GameController.load_map() # load map
 
     # create tiles
     for y in range(0, map_h, Config.TILE_SIZE):
         for x in range(0, map_w, Config.TILE_SIZE):
             Tile(x, y, Config.TILE_SIZE, Config.TILE_SIZE)
+
+    GameController.load_map()
 
     # build neighbors dictionary
     Tile.build_neighbors_dict() # build adjacency list
