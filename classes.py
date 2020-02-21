@@ -1,5 +1,28 @@
 import pygame, json, algorithms, random, math
-from config import Config
+
+
+class Config:
+    ROWS = 15 # number of rows
+    COLS = 2*ROWS # number of columns
+    TILE_SIZE = 45 # px
+    PADDING = 20 # px
+    margin_top = 50 # px
+    map_w = COLS * TILE_SIZE # map width
+    map_h = ROWS * TILE_SIZE # map height
+    screen_w = map_w + 2*PADDING # screen width
+    screen_h = map_h + 2*PADDING + margin_top # screen height
+
+    FPS = 60 # max frames per second
+    source = "1"
+    target = "288"
+
+    button_w = 180 # button width
+    button_h = 40 # button height
+
+    showExplorationDelay = 100 # delay between level exploration in milliseconds
+
+    algList = ["BFS", "DFS", "B_FS", "Dijkstra", "A*"]
+    currentAlgorithm = "Dijkstra"
 
 
 class Tile(pygame.Rect):
@@ -186,7 +209,7 @@ class GameController:
 		if (m_x, m_y) in Tile.coordToIdDict.keys():
 			tile_id_clicked = Tile.coordToIdDict[(m_x, m_y)]
 
-			if click == 1 and tile_id_clicked != Config.source: # left click and tile clicked is not source
+			if click == 1 and tile_id_clicked != Config.source and Tile.tilesDict[tile_id_clicked].walkable: # left click and tile clicked is not source
 				if tile_id_clicked == Config.target and Config.currentAlgorithm in ["BFS","DFS","Dijkstra"]:
 					Config.target = None
 				else:
@@ -396,9 +419,13 @@ class Button:
 				GameController.saveMap()
 
 			elif self.action == "switch_alg":
-				GameController.switch_alg(click)
-				# update button text
-				self.text = "Alg: " + Config.currentAlgorithm
+				# if is showing exploration, stop it
+				GameController.isShowingExploration = False
+
+				GameController.switch_alg(click)			
+
+				# update button text	
+				self.text = "Alg: " + Config.currentAlgorithm 
 
 	# deprecated
 	def set_active(self):
@@ -459,11 +486,11 @@ class Image:
 	frontierImage = pygame.transform.scale(frontierImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	shortestPathImage = pygame.transform.scale(shortestPathImage, (Config.TILE_SIZE, Config.TILE_SIZE))
 	borderImage = pygame.transform.scale(border, (Config.TILE_SIZE, Config.TILE_SIZE))
-	backgroundImage = pygame.transform.scale(backgroundImage, (1920, 1080))
-
+	backgroundImage = pygame.transform.scale(backgroundImage, (Config.screen_w, Config.screen_h))
 
 class Color:
 	white = (255,255,255)
 	black = (0,0,0)
 	button_ic = (153, 76, 0)
 	button_ac = (204, 102, 0)
+	yellow = (255,255,0)

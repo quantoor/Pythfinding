@@ -1,20 +1,19 @@
+#################################
+
 # Author: LeL
+
+#################################
+
+
 import pygame, sys, algorithms, time, random
-from bean import *
-from config import Config
+from classes import *
 
 
 def main():
     random.seed(42)
     pygame.init()
 
-    map_w = Config.COLS * Config.TILE_SIZE # map width
-    map_h = Config.ROWS * Config.TILE_SIZE # map height
-
-    screen_w = map_w + 2*Config.PADDING # screen width
-    screen_h = map_h + 2*Config.PADDING + Config.margin_top # screen height
-
-    screen = pygame.display.set_mode((screen_w, screen_h))
+    screen = pygame.display.set_mode((Config.screen_w, Config.screen_h))
     pygame.display.set_caption("Pythinding")
 
 
@@ -24,8 +23,8 @@ def main():
     # GameController.load_map() # load map
 
     # create tiles
-    for y in range(0, map_h, Config.TILE_SIZE):
-        for x in range(0, map_w, Config.TILE_SIZE):
+    for y in range(0, Config.map_h, Config.TILE_SIZE):
+        for x in range(0, Config.map_w, Config.TILE_SIZE):
             Tile(x, y, Config.TILE_SIZE, Config.TILE_SIZE)
 
     GameController.load_map()
@@ -37,9 +36,10 @@ def main():
     GameController.execute_current_algorithm()
 
     # create buttons
-    Button(0*Config.button_w, 0, Config.button_w, Config.button_h, "Show Exploration", "show_exploration")
-    Button(Config.button_w, 0, Config.button_w, Config.button_h, "Alg: " + Config.currentAlgorithm, "switch_alg")
-    Button(screen_w-100, 0, 100, Config.button_h, "Save Map", "save_map")
+    button_margin = (Config.margin_top+Config.PADDING-Config.button_h)/2
+    Button(Config.PADDING, button_margin, Config.button_w, Config.button_h, "Show Exploration", "show_exploration")
+    Button(Config.PADDING+Config.button_w+button_margin, button_margin, Config.button_w, Config.button_h, "Alg: " + Config.currentAlgorithm, "switch_alg")
+    Button(Config.PADDING+2*Config.button_w+2*button_margin, button_margin, 100, Config.button_h, "Save Map", "save_map")
 
 
     # starting game
@@ -51,7 +51,7 @@ def main():
             GameController.show_exploration()
 
         pygame.display.flip() # update the screen
-        pygame.time.Clock().tick(Config.FPS)
+        pygame.time.Clock().tick(Config.FPS) # limit framerate
 
 
 def draw_game(screen):

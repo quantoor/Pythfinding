@@ -1,6 +1,5 @@
 import math
-from bean import Tile
-from config import Config
+from classes import Config, Tile
 
 
 ####################### Breadth First Search #######################
