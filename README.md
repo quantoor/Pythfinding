@@ -18,3 +18,14 @@ Instructions:
 - Shift + left click: increase tile's weight (not available for Breadth-First and Depth-First Search)
 - Shift + right click: decrease tile's weight (not available for Breadth-First and Depth-First Search)
 - Left/right click on algorithm button to switch the search algorithm
+
+## Examples
+
+### Breadth-First Search
+![](https://github.com/quantoor/Pythfinding/blob/master/img/BFS.gif)
+
+### Depth-First Search
+![](https://github.com/quantoor/Pythfinding/blob/master/img/DFS.gif)
+
+### Dijkstra
+![](https://github.com/quantoor/Pythfinding/blob/master/img/dijkstra.gif)
